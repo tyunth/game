@@ -120,14 +120,24 @@ app.get('/admin', adminAuth, (req, res) => {
     `;
 
     db.all(query, [], (err, rows) => {
+        
         let html = `
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <h2 style="font-family: sans-serif;">Панель учителя (5 Класс)</h2>
-            <table border="1" cellpadding="10" style="border-collapse: collapse; font-family: sans-serif; text-align: center;">
-                <tr style="background: #f4f7f9;">
-                    <th>Ученик</th><th>Стрик 🔥</th><th>Золота 🥇</th><th>Всего игр</th><th>Взято подсказок 👀</th><th>Последний заход</th>
-                </tr>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <h2 style="font-family: sans-serif;">Панель учителя (5 Класс)</h2>
+    
+        <div style="margin-bottom: 20px; font-family: sans-serif;">
+            <form action="/admin/add-student" method="POST" style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" name="student_id" placeholder="Логин (напр. a1)" required style="padding: 5px;">
+                <input type="text" name="student_name" placeholder="Фамилия Имя" required style="padding: 5px; width: 200px;">
+                <button type="submit" style="padding: 6px 15px; background: #4a90e2; color: white; border: none; cursor: pointer;">+ Добавить</button>
+            </form>
+        </div>
+
+        <table border="1" cellpadding="10" style="border-collapse: collapse; font-family: sans-serif; text-align: center;">
+            <tr style="background: #f4f7f9;">
+                <th>Ученик</th><th>Стрик 🔥</th><th>Золота 🥇</th><th>Всего игр</th><th>Взято подсказок 👀</th><th>Последний заход</th>
+            </tr>
         `;
         rows.forEach(r => {
             html += `<tr><td style="text-align: left;">${r.name}</td><td>${r.streak}</td><td>${r.total_gold}</td><td>${r.total_games}</td><td><b>${r.total_hints || 0}</b></td><td>${r.last_played_date || '-'}</td></tr>`;
