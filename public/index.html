@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Математика 5 класс</title>
+    <style>
+        :root { --primary: #4a90e2; --bg: #f4f7f9; --text: #333; --danger: #e74c3c; --success: #2ecc71; --gold: #f1c40f; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        .screen { display: none; flex-direction: column; flex: 1; padding: 20px; align-items: center; justify-content: center; text-align: center; }
+        .screen.active { display: flex; }
+
+        h1 { margin-bottom: 10px; }
+        p { font-size: 1.1rem; color: #666; margin-bottom: 20px; }
+        
+        select { width: 100%; max-width: 300px; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 20px; outline: none; }
+        button.btn { background: var(--primary); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button.btn:active { transform: translateY(2px); }
+
+        /* Карта тем: Дерево навыков */
+        .map-container { display: flex; flex-direction: column; align-items: center; margin-top: 20px; width: 100%; padding-bottom: 50px; }
+        .map-level { display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;}
+        .map-level.row { gap: 60px; }
+        
+        .topic-node { width: 90px; height: 90px; border-radius: 50%; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; border: 4px solid #357abd; box-shadow: 0 6px 0 #357abd; transition: 0.1s; text-align: center; padding: 5px;}
+        .topic-node:active { transform: translateY(6px); box-shadow: 0 0 0 #357abd; }
+        .node-subtitle { font-size: 0.7rem; font-weight: normal; margin-top: 4px; opacity: 0.9; }
+        
+        /* Связи между темами */
+        .arrow-down { width: 6px; height: 40px; background: #cbd5e1; margin: 0 auto; z-index: 1;}
+        .arrow-right { width: 60px; height: 6px; background: #cbd5e1; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;}
+
+        /* Игровой экран */
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; font-size: 1.5rem; margin-bottom: 30px; }
+        .btn-help { background: #f1c40f; color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+
+        .task-container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); width: 100%; max-width: 400px; margin-bottom: auto; }
+        .task-text { font-size: 1.8rem; font-weight: bold; margin-bottom: 20px; }
+        
+        .answer-display { font-size: 2.5rem; min-height: 60px; border-bottom: 3px solid var(--primary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-weight: bold; width: 60%; }
+        .answer-display.error { border-color: var(--danger); color: var(--danger); animation: shake 0.4s; }
+
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; padding-bottom: 20px; }
+        .numpad button { background: white; border: none; padding: 20px 0; font-size: 1.5rem; border-radius: 12px; font-weight: bold; color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
+        .numpad button:active { background: #e0e0e0; }
+        .numpad button.action { background: #f0f0f0; font-size: 1.2rem; }
+        .numpad button.enter { background: var(--success); color: white; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 350px; text-align: left; }
+        
+        .achievements-box { margin-top: 15px; font-size: 1rem; color: #d35400; font-weight: bold; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .medal { font-size: 5rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="screen active">
+        <h1>Математика 5 класс</h1>
+        <select id="student-select">
+            <option value="" disabled selected>Загрузка...</option>
+        </select>
+        <button class="btn" onclick="login()">Войти</button>
+    </div>
+
+    <!-- Обновленная Карта Тем -->
+    <div id="map-screen" class="screen">
+        <h1>Путь знаний</h1>
+        <div class="map-container">
+            <div class="map-level">
+                <div class="topic-node" onclick="selectTopic('factor')">
+                    Множители
+                    <span class="node-subtitle">Простые</span>
+                </div>
+            </div>
+            <div class="arrow-down"></div>
+            <div class="map-level row">
+                <div class="topic-node" onclick="selectTopic('nod')">НОД</div>
+                <div class="arrow-right"></div>
+                <div class="topic-node" onclick="selectTopic('nok')">НОК</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="theory-screen" class="screen">
+        <h1 id="theory-title"></h1>
+        <div id="theory-content" style="background: white; padding: 20px; border-radius: 12px; text-align: left; margin-bottom: 20px; max-width: 400px; font-size: 1.1rem;"></div>
+        <button class="btn" onclick="startDailyTasks()">К заданиям!</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="header">
+            <div class="hearts" id="ui-hearts">❤️❤️❤️</div>
+            <button class="btn-help" onclick="showHint()">?</button>
+            <div class="score" id="ui-score" style="color: var(--primary); font-weight: bold;">0/5</div>
+        </div>
+
+        <div class="task-container">
+            <div class="task-text" id="ui-task"></div>
+            <div class="answer-display" id="ui-answer"></div>
+        </div>
+
+        <div class="numpad">
+            <button onclick="appendNum(1)">1</button><button onclick="appendNum(2)">2</button><button onclick="appendNum(3)">3</button>
+            <button onclick="appendNum(4)">4</button><button onclick="appendNum(5)">5</button><button onclick="appendNum(6)">6</button>
+            <button onclick="appendNum(7)">7</button><button onclick="appendNum(8)">8</button><button onclick="appendNum(9)">9</button>
+            <button class="action" onclick="clearAnswer()">C</button><button onclick="appendNum(0)">0</button><button class="enter" onclick="checkAnswer()">Ввод</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div class="medal" id="ui-medal">🥇</div>
+        <h1 id="ui-result-title"></h1>
+        <p id="ui-result-desc"></p>
+        <div id="ui-achievements" class="achievements-box"></div>
+        <br>
+        <button class="btn" onclick="location.reload()">На главную</button>
+    </div>
+
+    <div class="modal-overlay" id="hint-modal">
+        <div class="modal-content">
+            <h3 style="margin-top: 0; color: var(--primary);">Разложение</h3>
+            <p id="hint-factor" style="font-family: monospace; font-size: 1.2rem; font-weight: bold; background: #eee; padding: 10px; border-radius: 8px;"></p>
+            <p id="hint-text" style="font-size: 0.9rem;"></p>
+            <button class="btn" style="width: 100%; padding: 10px;" onclick="closeHint()">Понятно</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ЗАГРУЗКА УЧЕНИКОВ ---
+        window.onload = () => {
+            fetch('/api/students')
+                .then(res => res.json())
+                .then(students => {
+                    const select = document.getElementById('student-select');
+                    select.innerHTML = '<option value="" disabled selected>Кто ты?</option>';
+                    students.forEach(s => { select.innerHTML += `<option value="${s.id}">${s.name}</option>`; });
+                });
+        };
+
+        // --- УТИЛИТЫ ---
+        function getGCD(a, b) { return b === 0 ? a : getGCD(b, a % b); }
+        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        
+        // Математика: получение простых множителей
+        function getPrimeFactors(n) {
+            const factors = [];
+            let divisor = 2;
+            while (n >= 2) {
+                if (n % divisor === 0) { factors.push(divisor); n = n / divisor; } 
+                else { divisor++; }
+            }
+            return factors;
+        }
+
+        const coprimePairs = [[2,3], [3,4], [3,5], [4,5], [5,6], [5,7], [6,7]];
+
+        // --- БАЗА ТЕМ ---
+        const TOPICS = {
+            'factor': {
+                id: 'factor', title: 'Простые множители',
+                theory: '<b>Простое число</b> делится только на 1 и на себя (2, 3, 5, 7, 11...).<br><br>Любое число можно разложить на простые множители.<br><i>Например: 12 = 2 × 2 × 3</i><br><br>Вводи множители подряд без пробелов.',
+                generate: () => {
+                    const num = randomInt(12, 30); // Не берем большие, чтобы множителей было не больше 4 штук
+                    const factors = getPrimeFactors(num);
+                    const ans = parseInt(factors.join(''));
+                    return {
+                        text: `Множители числа ${num}?`,
+                        answer: ans,
+                        factorHint: `${num} делится на: ${factors[0]}...`, // Мини-подсказка
+                        textHint: `Попробуй делить ${num} на 2, потом на 3 и так далее. Ответ введи как ${factors.join('')}`
+                    };
+                }
+            },
+            'nod': {
+                id: 'nod', title: 'НОД',
+                theory: '<b>НОД</b> — наибольший общий делитель.<br><br><i>Пример: НОД(12, 18) = 6</i>',
+                generate: () => {
+                    let a, b, ans;
+                    const gcdBase = randomInt(2, 8);
+                    const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
+                    a = gcdBase * pair[0]; b = gcdBase * pair[1]; ans = gcdBase;
+                    
+                    const fA = getPrimeFactors(a).join(' × ');
+                    const fB = getPrimeFactors(b).join(' × ');
+
+                    return { 
+                        text: `НОД(${a}, ${b}) = ?`, answer: ans, 
+                        factorHint: `${a} = ${fA}<br>${b} = ${fB}`,
+                        textHint: "Найди общие простые множители и перемножь их." 
+                    };
+                }
+            },
+            'nok': {
+                id: 'nok', title: 'НОК',
+                theory: '<b>НОК</b> — наименьшее общее кратное.<br><br><i>Пример: НОК(4, 6) = 12</i>',
+                generate: () => {
+                    let a, b, ans;
+                    const gcdBase = randomInt(2, 6);
+                    const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
+                    a = gcdBase * pair[0]; b = gcdBase * pair[1]; ans = gcdBase * pair[0] * pair[1];
+                    
+                    const fA = getPrimeFactors(a).join(' × ');
+                    const fB = getPrimeFactors(b).join(' × ');
+
+                    return { 
+                        text: `НОК(${a}, ${b}) = ?`, answer: ans, 
+                        factorHint: `${a} = ${fA}<br>${b} = ${fB}`,
+                        textHint: "Возьми множители большего числа и добавь недостающие от меньшего." 
+                    };
+                }
+            }
+        };
+
+        // --- СОСТОЯНИЕ ---
+        let state = { studentId: null, currentTopic: null, currentTask: null, hearts: 3, score: 0, targetScore: 5, currentInput: '', hintsUsed: 0 };
+
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function login() {
+            const select = document.getElementById('student-select');
+            if (!select.value) return alert('Выбери имя!');
+            state.studentId = select.value;
+            showScreen('map-screen');
+        }
+
+        function selectTopic(id) {
+            state.currentTopic = TOPICS[id];
+            document.getElementById('theory-title').innerText = state.currentTopic.title;
+            document.getElementById('theory-content').innerHTML = state.currentTopic.theory;
+            showScreen('theory-screen');
+        }
+
+        function startDailyTasks() {
+            state.hearts = 3; state.score = 0; state.hintsUsed = 0;
+            updateHearts(); document.getElementById('ui-score').innerText = `0/${state.targetScore}`;
+            showScreen('game-screen');
+            nextTask();
+        }
+
+        function nextTask() {
+            state.currentInput = ''; updateInputDisplay();
+            state.currentTask = state.currentTopic.generate();
+            document.getElementById('ui-task').innerText = state.currentTask.text;
+        }
+
+        function appendNum(num) { if (state.currentInput.length < 5) { state.currentInput += num; updateInputDisplay(); } }
+        function clearAnswer() { state.currentInput = ''; updateInputDisplay(); }
+        function updateInputDisplay() { 
+            const d = document.getElementById('ui-answer'); 
+            d.innerText = state.currentInput; d.classList.remove('error'); 
+        }
+
+        function checkAnswer() {
+            if (state.currentInput === '') return;
+            if (parseInt(state.currentInput) === state.currentTask.answer) {
+                state.score++; document.getElementById('ui-score').innerText = `${state.score}/${state.targetScore}`;
+                if (state.score >= state.targetScore) endSession('gold');
+                else nextTask();
+            } else {
+                const d = document.getElementById('ui-answer');
+                d.classList.add('error');
+                
+                // Изменение: Снимаем жизнь при ПЕРВОЙ ошибке
+                state.hearts--; updateHearts();
+
+                setTimeout(() => {
+                    state.currentInput = ''; updateInputDisplay();
+                    if (state.hearts <= 0) {
+                        endSession('silver');
+                    } else {
+                        alert(`Ошибка! Правильный ответ был: ${state.currentTask.answer}`);
+                        nextTask();
+                    }
+                }, 500);
+            }
+        }
+
+        function updateHearts() { document.getElementById('ui-hearts').innerText = '❤️'.repeat(state.hearts) + '🖤'.repeat(3 - Math.max(0, state.hearts)); }
+        
+        function showHint() {
+            state.hintsUsed++;
+            document.getElementById('hint-factor').innerHTML = state.currentTask.factorHint;
+            document.getElementById('hint-text').innerText = state.currentTask.textHint;
+            document.getElementById('hint-modal').classList.add('active');
+        }
+        function closeHint() { document.getElementById('hint-modal').classList.remove('active'); }
+
+        function endSession(medal) {
+            showScreen('result-screen');
+            document.getElementById('ui-medal').innerText = medal === 'gold' ? '🥇' : '🥈';
+            document.getElementById('ui-result-title').innerText = medal === 'gold' ? 'Отличная работа!' : 'Можно лучше!';
+            document.getElementById('ui-result-desc').innerText = `Медаль: ${medal === 'gold' ? 'Золото' : 'Серебро'}`;
+            document.getElementById('ui-achievements').innerText = ''; // Очищаем
+
+            fetch('/api/save-result', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    studentId: state.studentId,
+                    topicId: state.currentTopic.id,
+                    medal: medal,
+                    score: state.score,
+                    hintsUsed: state.hintsUsed
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.newStreak) document.getElementById('ui-result-desc').innerText += `\nТвой стрик: 🔥 ${data.newStreak} дн.`;
+                if (data.newAchievements && data.newAchievements.length > 0) {
+                    document.getElementById('ui-achievements').innerText = `🏆 Открыты ачивки:\n` + data.newAchievements.join('\n');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
