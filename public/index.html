@@ -7,7 +7,382 @@
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f9; --text: #333; --danger: #e74c3c; --success: #2ecc71; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height:<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Математика 5 класс</title>
+    <style>
+        :root { --primary: #4a90e2; --bg: #f4f7f9; --text: #333; --danger: #e74c3c; --success: #2ecc71; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .screen { display: none; flex-direction: column; flex: 1; padding: 20px; align-items: center; justify-content: center; text-align: center; }
+        .screen.active { display: flex; }
+        select { width: 100%; max-width: 300px; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 20px; }
+        button.btn { background: var(--primary); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
+        button.btn.secondary { background: #95a5a6; margin-top: 10px; }
+        
+        /* Прогресс на карте */
+        .stats-bar { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; width: 100%; max-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        
+        .map-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .map-level { display: flex; justify-content: center; position: relative; z-index: 2; margin-bottom: 40px;}
+        .map-level.row { gap: 60px; margin-bottom: 0;}
+        .topic-node { position: relative; width: 90px; height: 90px; border-radius: 50%; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; border: 4px solid #357abd; box-shadow: 0 6px 0 #357abd; }
+        .topic-done { position: absolute; top: -5px; right: -10px; background: white; border-radius: 50%; font-size: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; font-size: 1.5rem; margin-bottom: 20px; }
+        .tools { display: flex; gap: 8px; }
+        .btn-tool { background: #f1c40f; color: #fff; border: none; border-radius: 50%; width: 42px; height: 42px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn-tool.theory { background: #3498db; }
+        .btn-tool.exit { background: var(--danger); font-size: 1rem; }
+
+        .task-container { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 400px; margin-bottom: auto; }
+        .answer-display { font-size: 2.5rem; min-height: 60px; border-bottom: 3px solid var(--primary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .answer-display.error { color: var(--danger); border-color: var(--danger); }
+
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; padding-bottom: 20px; }
+        .numpad button { background: white; border: none; padding: 15px 0; font-size: 1.5rem; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* Увеличенная клавиатура множителей */
+        .numpad.primes { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .numpad.primes button { padding: 10px 0; font-size: 1.2rem; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: left; max-height: 80vh; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="screen active">
+        <h1>Математика</h1>
+        <select id="class-select" onchange="filterStudents()">
+            <option value="" disabled selected>Выбери свой класс</option>
+        </select>
+        <select id="student-select" disabled>
+            <option value="" disabled selected>Сначала выбери класс</option>
+        </select>
+        <button class="btn" onclick="login()">Войти</button>
+    </div>
+
+    <div id="map-screen" class="screen">
+        <div class="stats-bar">
+            <div>🔥 Стрик: <b id="ui-streak">0</b></div>
+            <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1rem; cursor:pointer;" onclick="showAchievements()">🏆 Ачивки</button>
+        </div>
+        
+        <div class="map-container">
+            <div class="map-level">
+                <div class="topic-node" id="node-factor" onclick="selectTopic('factor')">Множители</div>
+            </div>
+            <div class="map-level row">
+                <div class="topic-node" id="node-nod" onclick="selectTopic('nod')">НОД</div>
+                <div class="topic-node" id="node-nok" onclick="selectTopic('nok')">НОК</div>
+            </div>
+        </div>
+        <button class="btn secondary" onclick="logout()">Сменить ученика</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="header">
+            <div id="ui-hearts" style="color: var(--danger);">❤️❤️❤️</div>
+            <div class="tools">
+                <button class="btn-tool theory" onclick="showTheoryModal()">📖</button>
+                <button class="btn-tool" onclick="showHint()">💡</button>
+                <button class="btn-tool exit" onclick="exitLevel()">🚪</button>
+            </div>
+            <div id="ui-score" style="color: var(--primary); font-weight: bold;">0/5</div>
+        </div>
+
+        <div class="task-container">
+            <div id="ui-task" style="font-size: 1.8rem; font-weight: bold; margin-bottom: 20px;"></div>
+            <div class="answer-display" id="ui-answer"></div>
+        </div>
+
+        <div id="keyboard-standard" class="numpad">
+            <button onclick="appendNum(1)">1</button><button onclick="appendNum(2)">2</button><button onclick="appendNum(3)">3</button>
+            <button onclick="appendNum(4)">4</button><button onclick="appendNum(5)">5</button><button onclick="appendNum(6)">6</button>
+            <button onclick="appendNum(7)">7</button><button onclick="appendNum(8)">8</button><button onclick="appendNum(9)">9</button>
+            <button style="background: #f0f0f0;" onclick="clearAnswer()">C</button><button onclick="appendNum(0)">0</button><button style="background: var(--success); color: white;" onclick="checkAnswer()">Ввод</button>
+        </div>
+
+        <!-- Клавиатура до 47 -->
+        <div id="keyboard-prime" class="numpad primes" style="display: none;">
+            <button onclick="appendFactor(2)">2</button><button onclick="appendFactor(3)">3</button><button onclick="appendFactor(5)">5</button><button onclick="appendFactor(7)">7</button>
+            <button onclick="appendFactor(11)">11</button><button onclick="appendFactor(13)">13</button><button onclick="appendFactor(17)">17</button><button onclick="appendFactor(19)">19</button>
+            <button onclick="appendFactor(23)">23</button><button onclick="appendFactor(29)">29</button><button onclick="appendFactor(31)">31</button><button onclick="appendFactor(37)">37</button>
+            <button onclick="appendFactor(41)">41</button><button onclick="appendFactor(43)">43</button><button onclick="appendFactor(47)">47</button><button style="background: #f0f0f0;" onclick="clearAnswer()">C</button>
+            <button style="grid-column: span 4; background: var(--success); color: white;" onclick="checkFactorAnswer()">Готово</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div style="font-size: 5rem; margin-bottom: 10px;" id="ui-medal">🥇</div>
+        <h1 id="ui-result-title"></h1>
+        <p id="ui-result-desc"></p>
+        <button class="btn" onclick="showScreen('map-screen'); loadProgress();">Вернуться на карту</button>
+    </div>
+
+    <div class="modal-overlay" id="generic-modal">
+        <div class="modal-content">
+            <h3 id="modal-title" style="margin-top: 0; color: var(--primary);"></h3>
+            <div id="modal-text" style="margin-bottom: 20px; line-height: 1.5;"></div>
+            <button class="btn" style="width: 100%;" onclick="closeModal()">Понятно</button>
+        </div>
+    </div>
+
+    <script>
+        let allStudents = [];
+        let state = { studentId: null, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
+
+        const ACH_DICT = { 'first_gold': '🥇 Первое золото', 'flawless': '🧠 Идеальный разум (Без подсказок)', 'streak_3': '🔥 В ударе (3 дня подряд)' };
+
+        const Logger = {
+            send: (action, details = {}) => {
+                if(!state.studentId) return;
+                fetch('/api/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({studentId: state.studentId, action, details})});
+            }
+        };
+
+        window.onload = () => {
+            fetch('/api/students').then(res => res.json()).then(data => {
+                allStudents = data;
+                const classSet = new Set(data.map(s => s.class_name).filter(c => c));
+                const classSelect = document.getElementById('class-select');
+                classSet.forEach(c => classSelect.innerHTML += `<option value="${c}">${c}</option>`);
+
+                const saved = localStorage.getItem('studentId');
+                if (saved && allStudents.find(s => s.id === saved)) {
+                    state.studentId = saved;
+                    Logger.send('session_resume', { event: 'Автоматический вход' });
+                    loadProgress();
+                    showScreen('map-screen');
+                }
+            });
+        };
+
+        function filterStudents() {
+            const cls = document.getElementById('class-select').value;
+            const studSelect = document.getElementById('student-select');
+            studSelect.innerHTML = '<option value="" disabled selected>Выбери свое имя</option>';
+            allStudents.filter(s => s.class_name === cls).forEach(s => { studSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`; });
+            studSelect.disabled = false;
+        }
+
+        function login() {
+            const sId = document.getElementById('student-select').value;
+            if (!sId) return alert('Выбери имя!');
+            state.studentId = sId;
+            localStorage.setItem('studentId', sId);
+            Logger.send('login', { event: 'Обычный вход' });
+            loadProgress();
+            showScreen('map-screen');
+        }
+
+        function logout() {
+            localStorage.removeItem('studentId');
+            state.studentId = null;
+            showScreen('login-screen');
+        }
+
+        function loadProgress() {
+            fetch(`/api/student-progress/${state.studentId}`).then(res => res.json()).then(data => {
+                document.getElementById('ui-streak').innerText = data.streak;
+                state.achievements = data.achievements;
+                
+                document.querySelectorAll('.topic-done').forEach(el => el.remove());
+                data.todayTopics.forEach(t => {
+                    const node = document.getElementById('node-' + t.topic);
+                    if (node && !node.querySelector('.topic-done')) {
+                        node.innerHTML += `<div class="topic-done">${t.medal === 'gold' ? '🥇' : '🥈'}</div>`;
+                    }
+                });
+            });
+        }
+
+        function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+        function getGCD(a, b) { return b === 0 ? a : getGCD(b, a % b); }
+        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function getPrimeFactors(n) { const f = []; let d = 2; while(n>=2){ if(n%d===0){f.push(d); n/=d;} else d++; } return f; }
+        
+        const coprimePairs = [[2,3], [3,4], [3,5], [4,5], [5,6], [5,7], [6,7]];
+
+        const TOPICS = {
+            'factor': {
+                id: 'factor', title: 'Множители', theory: 'Любое число можно разложить на простые множители (2, 3, 5, 7...).',
+                generate: () => {
+                    const primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47];
+                    // Генерируем число, комбинируя небольшие простые множители, чтобы результат был в пределах 150
+                    let num = primes[randomInt(0, 5)] * primes[randomInt(0, 8)];
+                    return { text: `Разложи ${num}`, factors: getPrimeFactors(num), hint: `Начни делить ${num} с самых маленьких простых чисел (2, 3, 5) или вспомни таблицу умножения.` };
+                }
+            },
+            'nod': {
+                id: 'nod', title: 'НОД', theory: 'НОД — наибольший общий делитель.',
+                generate: () => {
+                    const r = Math.random();
+                    let a, b, ans, hint;
+                    if (r < 0.2) { 
+                        // Взаимно простые
+                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
+                        a = pair[0] * randomInt(1, 3) + 1; b = pair[1] * randomInt(1, 3) + 1;
+                        if(getGCD(a,b) !== 1) { a = 7; b = 9; }
+                        ans = 1; hint = "У этих чисел нет общих делителей, кроме единицы. Они взаимно простые!";
+                    } else if (r < 0.4) {
+                        // Одно делится на другое
+                        ans = randomInt(4, 15);
+                        a = ans; b = ans * randomInt(2, 4);
+                        if(Math.random() > 0.5) [a,b] = [b,a];
+                        hint = "Внимательно посмотри на числа. Большее делится на меньшее без остатка? Значит, меньшее и есть НОД.";
+                    } else {
+                        // Обычные
+                        ans = randomInt(2, 9);
+                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
+                        a = ans * pair[0]; b = ans * pair[1];
+                        hint = "Разложи оба числа на простые множители и перемножь общие.";
+                    }
+                    return { text: `НОД(${a}, ${b})`, answer: ans, hint: hint };
+                }
+            },
+            'nok': {
+                id: 'nok', title: 'НОК', theory: 'НОК — наименьшее общее кратное.',
+                generate: () => {
+                    const r = Math.random();
+                    let a, b, ans, hint;
+                    if (r < 0.2) {
+                        // Взаимно простые
+                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
+                        a = pair[0]; b = pair[1]; ans = a * b;
+                        hint = "У этих чисел нет общих делителей (кроме 1). Их НОК равен их произведению!";
+                    } else if (r < 0.4) {
+                        // Одно делится на другое
+                        a = randomInt(3, 10); b = a * randomInt(2, 4); ans = b;
+                        if(Math.random() > 0.5) [a,b] = [b,a];
+                        hint = "Большее число уже делится на меньшее. Значит, большее число и есть НОК.";
+                    } else {
+                        const gcd = randomInt(2, 6);
+                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
+                        a = gcd * pair[0]; b = gcd * pair[1]; ans = gcd * pair[0] * pair[1];
+                        hint = "Выпиши множители большего числа и добавь недостающие от меньшего.";
+                    }
+                    return { text: `НОК(${a}, ${b})`, answer: ans, hint: hint };
+                }
+            }
+        };
+
+        function selectTopic(id) {
+            state.currentTopic = TOPICS[id];
+            Logger.send('start_topic', { topic: id });
+            state.hearts = 3; state.score = 0; state.hintsUsed = 0;
+            updateHearts(); document.getElementById('ui-score').innerText = '0/5';
+            
+            const isFactor = (id === 'factor');
+            document.getElementById('keyboard-standard').style.display = isFactor ? 'none' : 'grid';
+            document.getElementById('keyboard-prime').style.display = isFactor ? 'grid' : 'none';
+            
+            showScreen('game-screen');
+            nextTask();
+        }
+
+        function exitLevel() {
+            Logger.send('exit_level', { topic: state.currentTopic.id, score: state.score });
+            showScreen('map-screen');
+        }
+
+        function nextTask() {
+            state.currentInput = ''; state.currentFactors = []; state.startTime = Date.now();
+            updateDisplay();
+            state.currentTask = state.currentTopic.generate();
+            document.getElementById('ui-task').innerText = state.currentTask.text;
+        }
+
+        function appendNum(num) { if (state.currentInput.length < 5) { state.currentInput += num; updateDisplay(); } }
+        function appendFactor(num) { state.currentFactors.push(num); updateDisplay(); }
+        function clearAnswer() { state.currentInput = ''; state.currentFactors = []; updateDisplay(); }
+        
+        function updateDisplay() {
+            const d = document.getElementById('ui-answer');
+            d.classList.remove('error');
+            d.innerText = state.currentTopic.id === 'factor' ? (state.currentFactors.length ? state.currentFactors.join(' × ') : '?') : (state.currentInput || '?');
+        }
+
+        function checkAnswer() {
+            if (!state.currentInput) return;
+            const timeTaken = Math.round((Date.now() - state.startTime)/1000);
+            const isCorrect = parseInt(state.currentInput) === state.currentTask.answer;
+            Logger.send('answer_submit', { topic: state.currentTopic.id, correct: isCorrect, input: state.currentInput, timeSec: timeTaken });
+            handleResult(isCorrect);
+        }
+
+        function checkFactorAnswer() {
+            if (!state.currentFactors.length) return;
+            const timeTaken = Math.round((Date.now() - state.startTime)/1000);
+            const userAns = [...state.currentFactors].sort((a,b)=>a-b).join(',');
+            const trueAns = [...state.currentTask.factors].sort((a,b)=>a-b).join(',');
+            const isCorrect = userAns === trueAns;
+            Logger.send('answer_submit', { topic: 'factor', correct: isCorrect, input: userAns, timeSec: timeTaken });
+            handleResult(isCorrect);
+        }
+
+        function handleResult(isCorrect) {
+            if (isCorrect) {
+                state.score++; document.getElementById('ui-score').innerText = `${state.score}/5`;
+                if (state.score >= 5) endSession('gold'); else nextTask();
+            } else {
+                document.getElementById('ui-answer').classList.add('error');
+                state.hearts--; updateHearts();
+                setTimeout(() => {
+                    if (state.hearts <= 0) endSession('silver');
+                    else { clearAnswer(); nextTask(); }
+                }, 500);
+            }
+        }
+
+        function updateHearts() { document.getElementById('ui-hearts').innerText = '❤️'.repeat(state.hearts) + '🖤'.repeat(3 - Math.max(0, state.hearts)); }
+
+        function showTheoryModal() {
+            Logger.send('view_theory', { topic: state.currentTopic.id });
+            openGenericModal('Правило', state.currentTopic.theory);
+        }
+
+        function showHint() {
+            state.hintsUsed++;
+            Logger.send('use_hint', { topic: state.currentTopic.id, currentTask: state.currentTask.text });
+            openGenericModal('Умная подсказка', state.currentTask.hint);
+        }
+
+        function showAchievements() {
+            const achHtml = state.achievements.length === 0 
+                ? '<i>Пока нет достижений. Получи свое первое золото!</i>'
+                : state.achievements.map(a => `<div style="background:#f4f7f9; padding:10px; border-radius:8px; margin-bottom:5px;">${ACH_DICT[a] || a}</div>`).join('');
+            openGenericModal('Твои награды', achHtml);
+        }
+
+        function openGenericModal(title, textHTML) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-text').innerHTML = textHTML;
+            document.getElementById('generic-modal').classList.add('active');
+        }
+
+        function closeModal() { document.getElementById('generic-modal').classList.remove('active'); }
+
+        function endSession(medal) {
+            Logger.send('session_end', { topic: state.currentTopic.id, medal, score: state.score });
+            showScreen('result-screen');
+            document.getElementById('ui-medal').innerText = medal === 'gold' ? '🥇' : '🥈';
+            document.getElementById('ui-result-title').innerText = medal === 'gold' ? 'Победа!' : 'Тренировка окончена';
+
+            fetch('/api/save-result', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed })
+            });
+        }
+    </script>
+</body>
+</html> 100vh; overflow: hidden; }
         .screen { display: none; flex-direction: column; flex: 1; padding: 20px; align-items: center; justify-content: center; text-align: center; }
         .screen.active { display: flex; }
         select { width: 100%; max-width: 300px; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 20px; }
