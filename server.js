@@ -6,6 +6,7 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const db = new sqlite3.Database('./database.sqlite');
@@ -132,6 +133,18 @@ app.get('/admin', adminAuth, (req, res) => {
             html += `<tr><td style="text-align: left;">${r.name}</td><td>${r.streak}</td><td>${r.total_gold}</td><td>${r.total_games}</td><td><b>${r.total_hints || 0}</b></td><td>${r.last_played_date || '-'}</td></tr>`;
         });
         res.send(html + `</table>`);
+    });
+});
+
+app.post('/admin/add-student', adminAuth, (req, res) => {
+    const { student_id, student_name } = req.body;
+    
+    if (!student_id || !student_name) return res.redirect('/admin');
+
+    // INSERT OR IGNORE защитит от дублей, если случайно ввести один и тот же ID
+    db.run("INSERT OR IGNORE INTO students (id, name) VALUES (?, ?)", [student_id, student_name], (err) => {
+        if (err) console.error(err);
+        res.redirect('/admin'); // Перезагружаем страницу админки
     });
 });
 
