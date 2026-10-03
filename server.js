@@ -55,6 +55,24 @@ app.get('/api/students', (req, res) => {
     });
 });
 
+// НОВЫЙ РОУТ ДЛЯ ПРОГРЕССА
+app.get('/api/student-progress/:id', (req, res) => {
+    const studentId = req.params.id;
+    const today = getTodayDate();
+
+    db.get("SELECT streak, achievements FROM students WHERE id = ?", [studentId], (err, student) => {
+        if (err || !student) return res.status(404).json({ error: 'Ученик не найден' });
+
+        db.all("SELECT topic_id, medal FROM sessions WHERE student_id = ? AND date = ?", [studentId, today], (err, sessions) => {
+            res.json({
+                streak: student.streak,
+                achievements: JSON.parse(student.achievements || '[]'),
+                todayTopics: sessions.map(s => ({ topic: s.topic_id, medal: s.medal }))
+            });
+        });
+    });
+});
+
 app.post('/api/save-result', (req, res) => {
     const { studentId, topicId, medal, score, hintsUsed } = req.body;
     const today = getTodayDate();
