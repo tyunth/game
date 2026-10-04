@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Математика 5 класс</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f9; --text: #333; --danger: #e74c3c; --success: #2ecc71; --muted: #95a5a6; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -96,7 +97,7 @@
 
     <div id="game-screen" class="screen">
         <div class="top-nav">
-            <button class="btn-exit" onclick="exitLevel()">🚪</button>
+            <button class="btn-exit" onclick="goToMap(true)">🚪</button>
             <div class="timer" id="ui-timer">⏱ 00:00</div>
         </div>
 
@@ -134,8 +135,9 @@
         <div id="ui-medal" style="font-size:5rem; margin-top:40px;">🥇</div>
         <div id="ui-result-title" style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;"></div>
         <div id="ui-result-score" style="color:var(--muted); margin-bottom:30px;"></div>
+        <div id="ui-result-ach" style="color:var(--success); font-weight:bold; margin-bottom:20px;"></div>
         <button class="btn" onclick="selectTopic(state.currentTopic.id)">🔁 Ещё раз</button>
-        <button class="btn" style="margin-top:10px; background:#95a5a6;" onclick="backToMap()">🏠 На карту</button>
+        <button class="btn" style="margin-top:10px; background:#95a5a6;" onclick="goToMap()">🏠 На карту</button>
     </div>
 
     <div id="generic-modal" class="modal-overlay">
@@ -162,28 +164,28 @@
         };
 
         // Переменные для таймера
-let timerInterval;
-let taskSeconds = 0;
+        let timerInterval;
+        let taskSeconds = 0;
 
-function formatTime(sec) {
-    const m = Math.floor(sec / 60).toString().padStart(2, '0');
-    const s = (sec % 60).toString().padStart(2, '0');
-    return `⏱ ${m}:${s}`;
-}
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60).toString().padStart(2, '0');
+            const s = (sec % 60).toString().padStart(2, '0');
+            return `⏱ ${m}:${s}`;
+        }
 
-function startTimer() {
-    clearInterval(timerInterval);
-    taskSeconds = 0;
-    document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
-    timerInterval = setInterval(() => {
-        taskSeconds++;
-        document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
-    }, 1000);
-}
+        function startTimer() {
+            clearInterval(timerInterval);
+            taskSeconds = 0;
+            document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
+            timerInterval = setInterval(() => {
+                taskSeconds++;
+                document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
+            }, 1000);
+        }
 
-function stopTimer() {
-    clearInterval(timerInterval);
-}
+        function stopTimer() {
+            clearInterval(timerInterval);
+        }
 
         window.onload = () => {
             fetch('/api/students').then(res => res.json()).then(data => {
@@ -255,7 +257,7 @@ function stopTimer() {
 
         const TOPICS = {
             'factor': {
-                id: 'factor', title: 'Множители', theory: 'Любое число можно разложить на простые множители (2, 3, 5, 7...).',
+                id: 'factor', theory: 'Любое число можно разложить на простые множители (2, 3, 5, 7...).',
                 generate: () => {
                     const primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47];
                     // Генерируем число, комбинируя небольшие простые множители, чтобы результат был в пределах 150
@@ -264,7 +266,7 @@ function stopTimer() {
                 }
             },
             'nod': {
-                id: 'nod', title: 'НОД', theory: 'НОД — наибольший общий делитель.',
+                id: 'nod', theory: 'НОД — наибольший общий делитель.',
                 generate: () => {
                     const r = Math.random();
                     let a, b, ans, hint;
@@ -291,7 +293,7 @@ function stopTimer() {
                 }
             },
             'nok': {
-                id: 'nok', title: 'НОК', theory: 'НОК — наименьшее общее кратное.',
+                id: 'nok', theory: 'НОК — наименьшее общее кратное.',
                 generate: () => {
                     const r = Math.random();
                     let a, b, ans, hint;
@@ -330,14 +332,9 @@ function stopTimer() {
             nextTask();
         }
 
-        function exitLevel() {
+        function goToMap(fromGame) {
             stopTimer();
-            Logger.send('exit_level', { topic: state.currentTopic.id, score: state.score });
-            showScreen('map-screen');
-        }
-
-        function backToMap() {
-            stopTimer();
+            if (fromGame) Logger.send('exit_level', { topic: state.currentTopic.id, score: state.score });
             loadProgress();
             showScreen('map-screen');
         }
@@ -360,24 +357,23 @@ function stopTimer() {
             d.innerText = state.currentTopic.id === 'factor' ? (state.currentFactors.length ? state.currentFactors.join(' × ') : '?') : (state.currentInput || '?');
         }
 
+        function submitAnswer(isCorrect, input, topicId) {
+            stopTimer();
+            const timeTaken = Math.round((Date.now() - state.startTime) / 1000);
+            Logger.send('answer_submit', { topic: topicId, correct: isCorrect, input, timeSec: timeTaken });
+            handleResult(isCorrect);
+        }
+
         function checkAnswer() {
             if (!state.currentInput) return;
-            stopTimer();
-            const timeTaken = Math.round((Date.now() - state.startTime)/1000);
-            const isCorrect = parseInt(state.currentInput) === state.currentTask.answer;
-            Logger.send('answer_submit', { topic: state.currentTopic.id, correct: isCorrect, input: state.currentInput, timeSec: timeTaken });
-            handleResult(isCorrect);
+            submitAnswer(parseInt(state.currentInput) === state.currentTask.answer, state.currentInput, state.currentTopic.id);
         }
 
         function checkFactorAnswer() {
             if (!state.currentFactors.length) return;
-            stopTimer();
-            const timeTaken = Math.round((Date.now() - state.startTime)/1000);
-            const userAns = [...state.currentFactors].sort((a,b)=>a-b).join(',');
-            const trueAns = [...state.currentTask.factors].sort((a,b)=>a-b).join(',');
-            const isCorrect = userAns === trueAns;
-            Logger.send('answer_submit', { topic: 'factor', correct: isCorrect, input: userAns, timeSec: timeTaken });
-            handleResult(isCorrect);
+            const userAns = [...state.currentFactors].sort((a, b) => a - b).join(',');
+            const trueAns = [...state.currentTask.factors].sort((a, b) => a - b).join(',');
+            submitAnswer(userAns === trueAns, userAns, 'factor');
         }
 
         function handleResult(isCorrect) {
@@ -432,6 +428,11 @@ function stopTimer() {
             fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed })
+            }).then(r => r.json()).then(resp => {
+                const el = document.getElementById('ui-result-ach');
+                if (el && resp.newAchievements && resp.newAchievements.length) {
+                    el.innerText = '🏆 Новые награды: ' + resp.newAchievements.map(k => ACH_DICT[k] || k).join(', ');
+                }
             });
         }
     </script>

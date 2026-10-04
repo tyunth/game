@@ -105,15 +105,27 @@ app.post('/api/save-result', (req, res) => {
         let achs = JSON.parse(student.achievements || '[]');
         let newlyUnlocked = [];
 
-        if (medal === 'gold' && !achs.includes('first_gold')) { achs.push('first_gold'); newlyUnlocked.push('🥇 Первое золото'); }
-        if (medal === 'gold' && hintsUsed === 0 && !achs.includes('flawless')) { achs.push('flawless'); newlyUnlocked.push('🧠 Идеальный разум'); }
-        if (newStreak >= 3 && !achs.includes('streak_3')) { achs.push('streak_3'); newlyUnlocked.push('🔥 В ударе (3 дня)'); }
+        if (medal === 'gold' && !achs.includes('first_gold')) { achs.push('first_gold'); newlyUnlocked.push('first_gold'); }
+        if (medal === 'gold' && hintsUsed === 0 && !achs.includes('flawless')) { achs.push('flawless'); newlyUnlocked.push('flawless'); }
+        if (newStreak >= 3 && !achs.includes('streak_3')) { achs.push('streak_3'); newlyUnlocked.push('streak_3'); }
 
         db.run("UPDATE students SET streak = ?, last_played_date = ?, achievements = ? WHERE id = ?", 
             [newStreak, today, JSON.stringify(achs), studentId], () => {
             db.run("INSERT INTO sessions (student_id, topic_id, date, medal, score, hints_used) VALUES (?, ?, ?, ?, ?, ?)", 
                 [studentId, topicId, today, medal, score, hintsUsed || 0], () => {
-                res.json({ success: true, newStreak, newAchievements: newlyUnlocked });
+                // Обновляем стрик по конкретной теме (уровню)
+                db.get("SELECT streak, last_played_date FROM topic_progress WHERE student_id = ? AND topic_id = ?",
+                    [studentId, topicId], (err, tp) => {
+                    let topicStreak = 1;
+                    if (tp) {
+                        if (tp.last_played_date === today) topicStreak = tp.streak;
+                        else if (tp.last_played_date === yesterday) topicStreak = tp.streak + 1;
+                    }
+                    db.run("INSERT OR REPLACE INTO topic_progress (student_id, topic_id, streak, last_played_date) VALUES (?, ?, ?, ?)",
+                        [studentId, topicId, topicStreak, today], () => {
+                        res.json({ success: true, newAchievements: newlyUnlocked });
+                    });
+                });
             });
         });
     });
@@ -152,7 +164,6 @@ app.get('/admin', adminAuth, (req, res) => {
     const query = `
         SELECT s.id, s.name, s.class_name, s.streak, s.last_played_date, 
             COUNT(sess.id) as total_games,
-            SUM(sess.hints_used) as total_hints,
             SUM(CASE WHEN sess.medal = 'gold' THEN 1 ELSE 0 END) as total_gold
         FROM students s
         LEFT JOIN sessions sess ON s.id = sess.student_id
