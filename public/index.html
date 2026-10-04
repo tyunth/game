@@ -21,11 +21,14 @@
         .btn-exit:active { opacity: 1; }
 
         /* Карта тем */
-        .map-container { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 30px; margin-top: 20px; padding-bottom: 30px; overflow-y: auto;}
-        .map-level { display: flex; justify-content: center; gap: 40px; position: relative; }
-        .topic-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .map-container { position: relative; width: 100%; max-width: 400px; margin: 10px auto 0; padding: 10px 0 20px; overflow-y: auto; }
+        /* Соединительная «дорожка» между уровнями */
+        .map-container::before { content: ''; position: absolute; left: 50px; top: 62px; bottom: 62px; transform: translateX(-50%); width: 5px; border-radius: 3px; background: repeating-linear-gradient(#c7d3e0 0 10px, transparent 10px 20px); }
+        .map-item { position: relative; display: flex; align-items: center; gap: 14px; padding: 10px 0 10px 8px; }
+        .topic-info { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; }
+        .topic-title { font-weight: bold; font-size: 1rem; line-height: 1.2; }
         
-        .topic-node { position: relative; width: 90px; height: 90px; border-radius: 50%; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; border: 4px solid #357abd; box-shadow: 0 6px 0 #357abd; }
+        .topic-node { position: relative; z-index: 1; flex: 0 0 auto; width: 84px; height: 84px; border-radius: 50%; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 1.6rem; color: white; cursor: pointer; border: 4px solid #357abd; box-shadow: 0 6px 0 #357abd; }
         .topic-node:active:not(.locked) { transform: translateY(6px); box-shadow: 0 0 0 #357abd; }
         .topic-node.locked { background: #cbd5e1; border-color: #94a3b8; box-shadow: 0 6px 0 #94a3b8; cursor: not-allowed; color: #64748b; }
         
@@ -70,25 +73,31 @@
         </div>
         
         <div class="map-container">
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node" id="node-factor" style="font-size:0.62rem; line-height:1.1;" onclick="selectTopic('factor')">Разложение на простые множители</div>
+            <div class="map-item">
+                <div class="topic-node" id="node-factor" onclick="selectTopic('factor')">1</div>
+                <div class="topic-info">
+                    <div class="topic-title">Разложение на простые множители</div>
                     <div class="topic-streak-badge" id="streak-factor">🔥 0</div>
                 </div>
             </div>
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node" id="node-nod" onclick="selectTopic('nod')">НОД</div>
+            <div class="map-item">
+                <div class="topic-node" id="node-nod" onclick="selectTopic('nod')">2</div>
+                <div class="topic-info">
+                    <div class="topic-title">НОД</div>
                     <div class="topic-streak-badge" id="streak-nod">🔥 0</div>
                 </div>
-                <div class="topic-wrapper">
-                    <div class="topic-node" id="node-nok" onclick="selectTopic('nok')">НОК</div>
+            </div>
+            <div class="map-item">
+                <div class="topic-node" id="node-nok" onclick="selectTopic('nok')">3</div>
+                <div class="topic-info">
+                    <div class="topic-title">НОК</div>
                     <div class="topic-streak-badge" id="streak-nok">🔥 0</div>
                 </div>
             </div>
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node locked">Дроби <div style="font-size: 1.5rem; margin-top: 5px;">🔒</div></div>
+            <div class="map-item">
+                <div class="topic-node locked">4</div>
+                <div class="topic-info">
+                    <div class="topic-title">Дроби</div>
                     <div class="topic-streak-badge" style="color: var(--muted);">В разработке</div>
                 </div>
             </div>
@@ -423,8 +432,8 @@
             if (firstTime) localStorage.setItem('calcTried', '1');
             Logger.send('open_calculator', { topic: state.currentTopic.id, firstTime });
             openGenericModal('🧮 Калькулятор',
-                '<div style="text-align:center; color:var(--danger); font-weight:bold; font-size:1.4rem; margin:10px 0;">ЗАПРЕЩЕНКА! 🚫</div>' +
-                '<div style="text-align:center;">Калькулятором пользоваться нельзя — считай в уме!</div>');
+                '<div style="text-align:center; color:var(--danger); font-weight:bold; font-size:1.4rem; margin:10px 0;">ЗАПРЕЩЕНКА! </div>' +
+                '<div style="text-align:center;">Калькулятором пользоваться нельзя </div>');
         }
 
         function showHint() {
