@@ -56,6 +56,53 @@ const getYesterdayDate = () => {
     return d.toISOString().split('T')[0];
 };
 
+// Выполняет список асинхронных задач и вызывает done, когда все завершены
+function runAsync(tasks, done) {
+    let left = tasks.length;
+    if (!left) return done();
+    tasks.forEach(fn => fn(() => { if (--left === 0) done(); }));
+};
+
+// --- ДОСТИЖЕНИЯ (единый справочник) ---
+const ACHIEVEMENTS = {
+    first_gold:    { icon: '🥇', title: 'Золотой старт',   desc: 'Получить первую золотую медаль.' },
+    flawless:      { icon: '🛡️', title: 'Ни царапины',      desc: 'Золото без единой ошибки и без подсказок.' },
+    on_edge:       { icon: '😰', title: 'На волоске',       desc: 'Золото, совершив две ошибки (осталось одно сердечко).' },
+    universal:     { icon: '🎓', title: 'Универсал',        desc: 'Золото по всем трём темам за один день.' },
+    marathon:      { icon: '🏃', title: 'Марафонец',         desc: 'Стрик 7 дней подряд в одной теме.' },
+    first_session: { icon: '🚀', title: 'Первый шаг',        desc: 'Завершить первую тренировку.' },
+    no_hints:      { icon: '💡', title: 'Самостоятельный',   desc: 'Завершить тренировку без единой подсказки.' },
+    streak_3:      { icon: '🔥', title: 'В ударе',           desc: 'Заниматься 3 дня подряд.' },
+    streak_30:     { icon: '🗓️', title: 'Месяц дисциплины', desc: 'Заниматься 30 дней подряд.' },
+    hundred:       { icon: '💯', title: 'Сотник',            desc: 'Сыграть 100 тренировок.' },
+    curious:       { icon: '🤔', title: 'Любопытный',        desc: 'Нажать на запрещённый калькулятор.' }
+};
+
+// Правила выдачи: [id, условие]
+const ACH_CHECKS = [
+    ['first_gold',    c => c.medal === 'gold'],
+    ['flawless',      c => c.medal === 'gold' && c.heartsLeft === 3 && c.hints === 0],
+    ['on_edge',       c => c.medal === 'gold' && c.heartsLeft === 1],
+    ['universal',     c => c.goldTopicsToday >= 3],
+    ['marathon',      c => c.topicStreak >= 7],
+    ['first_session', c => c.games >= 1],
+    ['no_hints',      c => c.hints === 0],
+    ['streak_3',      c => c.newStreak >= 3],
+    ['streak_30',     c => c.newStreak >= 30],
+    ['hundred',       c => c.games >= 100],
+    ['curious',       c => c.triedCalculator]
+];
+
+function evaluateAchievements(ctx, owned) {
+    return ACH_CHECKS
+        .filter(([id, check]) => !owned.includes(id) && check(ctx))
+        .map(([id]) => id);
+}
+
+app.get('/api/achievements', (req, res) => {
+    res.json(Object.entries(ACHIEVEMENTS).map(([id, a]) => ({ id, ...a })));
+});
+
 // --- API РОУТЫ ---
 app.get('/api/students', (req, res) => {
     db.all("SELECT id, name, class_name FROM students ORDER BY class_name, name", [], (err, rows) => {
@@ -90,9 +137,11 @@ app.get('/api/student-progress/:id', (req, res) => {
 });
 
 app.post('/api/save-result', (req, res) => {
-    const { studentId, topicId, medal, score, hintsUsed } = req.body;
+    const { studentId, topicId, medal, score, hintsUsed, hearts } = req.body;
     const today = getTodayDate();
     const yesterday = getYesterdayDate();
+    const hints = hintsUsed || 0;
+    const heartsLeft = (typeof hearts === 'number') ? hearts : 3;
 
     db.get("SELECT streak, last_played_date, achievements FROM students WHERE id = ?", [studentId], (err, student) => {
         if (err || !student) return res.status(404).json({ error: 'Ученик не найден' });
@@ -102,28 +151,36 @@ app.post('/api/save-result', (req, res) => {
             newStreak = (student.last_played_date === yesterday) ? student.streak + 1 : 1;
         }
 
-        let achs = JSON.parse(student.achievements || '[]');
-        let newlyUnlocked = [];
+        const owned = JSON.parse(student.achievements || '[]');
 
-        if (medal === 'gold' && !achs.includes('first_gold')) { achs.push('first_gold'); newlyUnlocked.push('first_gold'); }
-        if (medal === 'gold' && hintsUsed === 0 && !achs.includes('flawless')) { achs.push('flawless'); newlyUnlocked.push('flawless'); }
-        if (newStreak >= 3 && !achs.includes('streak_3')) { achs.push('streak_3'); newlyUnlocked.push('streak_3'); }
+        // 1) Сохраняем сессию
+        db.run("INSERT INTO sessions (student_id, topic_id, date, medal, score, hints_used) VALUES (?, ?, ?, ?, ?, ?)",
+            [studentId, topicId, today, medal, score, hints], () => {
 
-        db.run("UPDATE students SET streak = ?, last_played_date = ?, achievements = ? WHERE id = ?", 
-            [newStreak, today, JSON.stringify(achs), studentId], () => {
-            db.run("INSERT INTO sessions (student_id, topic_id, date, medal, score, hints_used) VALUES (?, ?, ?, ?, ?, ?)", 
-                [studentId, topicId, today, medal, score, hintsUsed || 0], () => {
-                // Обновляем стрик по конкретной теме (уровню)
-                db.get("SELECT streak, last_played_date FROM topic_progress WHERE student_id = ? AND topic_id = ?",
-                    [studentId, topicId], (err, tp) => {
-                    let topicStreak = 1;
-                    if (tp) {
-                        if (tp.last_played_date === today) topicStreak = tp.streak;
-                        else if (tp.last_played_date === yesterday) topicStreak = tp.streak + 1;
-                    }
-                    db.run("INSERT OR REPLACE INTO topic_progress (student_id, topic_id, streak, last_played_date) VALUES (?, ?, ?, ?)",
-                        [studentId, topicId, topicStreak, today], () => {
-                        res.json({ success: true, newAchievements: newlyUnlocked });
+            // 2) Обновляем стрик по конкретной теме (уровню)
+            db.get("SELECT streak, last_played_date FROM topic_progress WHERE student_id = ? AND topic_id = ?",
+                [studentId, topicId], (err2, tp) => {
+                let topicStreak = 1;
+                if (tp) {
+                    if (tp.last_played_date === today) topicStreak = tp.streak;
+                    else if (tp.last_played_date === yesterday) topicStreak = tp.streak + 1;
+                }
+                db.run("INSERT OR REPLACE INTO topic_progress (student_id, topic_id, streak, last_played_date) VALUES (?, ?, ?, ?)",
+                    [studentId, topicId, topicStreak, today], () => {
+
+                    // 3) Данные для достижений (считаем параллельно)
+                    const ctx = { medal, hints, heartsLeft, topicStreak, newStreak, games: 0, goldTopicsToday: 0, triedCalculator: false };
+                    runAsync([
+                        next => db.get("SELECT COUNT(*) AS c FROM sessions WHERE student_id = ?", [studentId], (e, r) => { ctx.games = r.c || 0; next(); }),
+                        next => db.get("SELECT COUNT(DISTINCT topic_id) AS c FROM sessions WHERE student_id = ? AND date = ? AND medal = 'gold'", [studentId, today], (e, r) => { ctx.goldTopicsToday = r.c || 0; next(); }),
+                        next => db.get("SELECT COUNT(*) AS c FROM logs WHERE student_id = ? AND action = 'open_calculator'", [studentId], (e, r) => { ctx.triedCalculator = (r.c || 0) > 0; next(); })
+                    ], () => {
+                        const newlyUnlocked = evaluateAchievements(ctx, owned);
+                        const all = owned.concat(newlyUnlocked);
+                        db.run("UPDATE students SET streak = ?, last_played_date = ?, achievements = ? WHERE id = ?",
+                            [newStreak, today, JSON.stringify(all), studentId], () => {
+                            res.json({ success: true, newAchievements: newlyUnlocked });
+                        });
                     });
                 });
             });

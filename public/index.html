@@ -163,7 +163,20 @@
         let allStudents = [];
         let state = { studentId: null, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
 
-        const ACH_DICT = { 'first_gold': '🥇 Первое золото', 'flawless': '🧠 Идеальный разум (Без подсказок)', 'streak_3': '🔥 В ударе (3 дня подряд)' };
+        // Справочник достижений приходит с сервера (единый источник правды)
+        let ACH_CATALOG = {};
+
+        function loadAchievementsCatalog() {
+            return fetch('/api/achievements').then(r => r.json()).then(list => {
+                ACH_CATALOG = {};
+                list.forEach(a => { ACH_CATALOG[a.id] = a; });
+            }).catch(() => {});
+        }
+
+        function achName(id) {
+            const a = ACH_CATALOG[id];
+            return a ? `${a.icon} ${a.title}` : id;
+        }
 
         const Logger = {
             send: (action, details = {}) => {
@@ -197,6 +210,7 @@
         }
 
         window.onload = () => {
+            loadAchievementsCatalog();
             fetch('/api/students').then(res => res.json()).then(data => {
                 allStudents = data;
                 const classSet = new Set(data.map(s => s.class_name).filter(c => c));
@@ -448,10 +462,25 @@
         }
 
         function showAchievements() {
-            const achHtml = state.achievements.length === 0 
-                ? '<i>Пока нет достижений. Получи свое первое золото!</i>'
-                : state.achievements.map(a => `<div style="background:#f4f7f9; padding:10px; border-radius:8px; margin-bottom:5px;">${ACH_DICT[a] || a}</div>`).join('');
-            openGenericModal('Твои награды', achHtml);
+            const owned = state.achievements || [];
+            const ids = Object.keys(ACH_CATALOG);
+            const total = ids.length || owned.length;
+
+            const cards = ids.map(id => {
+                const a = ACH_CATALOG[id];
+                const got = owned.includes(id);
+                return `<div style="padding:10px; border-radius:8px; margin-bottom:6px; background:${got ? '#eafaf0' : '#f1f3f5'}; border:1px solid ${got ? '#2ecc71' : '#dee2e6'};">
+                    <div style="font-weight:bold;">${got ? a.icon : '🔒'} ${a.title}</div>
+                    <div style="font-size:0.85rem; color:#666;">${a.desc}</div>
+                </div>`;
+            }).join('');
+
+            const head = `<div style="margin-bottom:10px; font-weight:bold;">Получено: ${owned.length} из ${total}</div>`;
+            const body = cards || (owned.length
+                ? owned.map(id => `<div style="padding:10px; border-radius:8px; margin-bottom:6px; background:#eafaf0;">${achName(id)}</div>`).join('')
+                : '<i>Список наград пуст</i>');
+
+            openGenericModal('Твои награды', head + body);
         }
 
         function openGenericModal(title, textHTML) {
@@ -472,11 +501,13 @@
 
             fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed })
+                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts })
             }).then(r => r.json()).then(resp => {
                 const el = document.getElementById('ui-result-ach');
                 if (el && resp.newAchievements && resp.newAchievements.length) {
-                    el.innerText = '🏆 Новые награды: ' + resp.newAchievements.map(k => ACH_DICT[k] || k).join(', ');
+                    const names = resp.newAchievements.map(k => ACH_CATALOG[k] ? `${ACH_CATALOG[k].icon} ${ACH_CATALOG[k].title}` : k);
+                    el.innerHTML = '🏆 Новые награды: ' + names.join(', ');
+                    state.achievements = (state.achievements || []).concat(resp.newAchievements);
                 }
             });
         }
