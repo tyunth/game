@@ -38,6 +38,19 @@
         .topic-streak-badge { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 2; font-size: 0.85rem; font-weight: bold; color: #d35400; background: #fff; padding: 2px 8px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .topic-done { position: absolute; top: -5px; right: -10px; background: white; border-radius: 50%; font-size: 1.3rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
 
+        /* Командный зачёт классов */
+        .team-panel { width: 100%; max-width: 400px; background: white; border-radius: 16px; padding: 12px 14px; margin-bottom: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .team-title { font-weight: bold; margin-bottom: 10px; }
+        .team-sub { font-weight: normal; font-size: 0.78rem; color: var(--muted); }
+        .team-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+        .team-name { width: 52px; font-weight: bold; font-size: 0.9rem; text-align: left; }
+        .team-row.mine .team-name { color: var(--primary); }
+        .team-bar { flex: 1; height: 14px; background: #eef2f6; border-radius: 8px; overflow: hidden; }
+        .team-bar > i { display: block; height: 100%; background: linear-gradient(90deg, #f7c948, #f39c12); border-radius: 8px; transition: width 0.4s; }
+        .team-points { width: 62px; text-align: right; font-weight: bold; font-size: 0.85rem; }
+        .team-points small { color: var(--muted); font-weight: normal; }
+        .team-note { font-size: 0.72rem; color: var(--muted); text-align: left; margin: 0 0 2px 60px; }
+
         /* Игровой экран */
         .game-header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; margin-bottom: 20px; }
         .timer { color: var(--muted); font-family: monospace; font-size: 1.2rem; display: flex; align-items: center; gap: 5px; }
@@ -75,6 +88,11 @@
             <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆 Награды</button>
         </div>
         
+        <div class="team-panel">
+            <div class="team-title">🏆 Командный зачёт <span class="team-sub" id="team-week"></span></div>
+            <div id="team-rows"></div>
+        </div>
+
         <div class="map-container">
             <div class="map-level">
                 <div class="topic-wrapper">
@@ -267,7 +285,31 @@
                         node.innerHTML += `<div class="topic-done">${t.medal === 'gold' ? '🥇' : '🥈'}</div>`;
                     }
                 });
+                loadTeamStandings();
             });
+        }
+
+        function loadTeamStandings() {
+            fetch('/api/team-standings').then(res => res.json()).then(data => {
+                const box = document.getElementById('team-rows');
+                const wk = document.getElementById('team-week');
+                if (!box) return;
+                if (wk && data.weekStart) wk.innerText = `неделя с ${data.weekStart.slice(8)}.${data.weekStart.slice(5, 7)}`;
+
+                const me = allStudents.find(s => s.id === state.studentId);
+                const myClass = me ? me.class_name : null;
+
+                box.innerHTML = (data.teams || []).map((t, i) => {
+                    const max = t.max || 1;
+                    const pct = Math.max(0, Math.min(100, Math.round(t.points / max * 100)));
+                    return `<div class="team-row ${t.class_name === myClass ? 'mine' : ''}">
+                        <span class="team-name">${i === 0 ? '👑 ' : ''}${t.class_name}</span>
+                        <span class="team-bar"><i style="width:${pct}%"></i></span>
+                        <span class="team-points">${t.points}<small>/${max}</small></span>
+                    </div>
+                    <div class="team-note">в зачёте: ${t.scored} из ${t.students}</div>`;
+                }).join('') || '<div class="team-note">Пока нет данных</div>';
+            }).catch(() => {});
         }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }

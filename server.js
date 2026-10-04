@@ -63,6 +63,20 @@ function runAsync(tasks, done) {
     tasks.forEach(fn => fn(() => { if (--left === 0) done(); }));
 };
 
+// --- НЕДЕЛЯ И КОМАНДНЫЙ ЗАЧЁТ ---
+const MIN_DAYS_FOR_SCORE = 5;  // столько дней нужно, чтобы попасть в зачёт
+const TOPICS_COUNT = 3;        // количество доступных тем
+
+// Понедельник текущей недели + сегодня
+function getWeekInfo() {
+    const today = getTodayDate();
+    const now = new Date();
+    const dow = (now.getDay() + 6) % 7; // 0 = понедельник
+    const monday = new Date(now);
+    monday.setDate(monday.getDate() - dow);
+    return { monday, mondayStr: monday.toISOString().split('T')[0], today };
+}
+
 // --- ДОСТИЖЕНИЯ (единый справочник) ---
 const ACHIEVEMENTS = {
     first_gold:    { icon: '🥇', title: 'Золотой старт',   desc: 'Получить первую золотую медаль.' },
@@ -107,6 +121,62 @@ app.get('/api/achievements', (req, res) => {
 app.get('/api/students', (req, res) => {
     db.all("SELECT id, name, class_name FROM students ORDER BY class_name, name", [], (err, rows) => {
         res.json(rows);
+    });
+});
+
+// Командный зачёт классов: +1 очко за золото (не чаще 1 раза в день по каждой теме).
+// В зачёт идут только ученики, отыгравшие за неделю не меньше MIN_DAYS_FOR_SCORE дней.
+app.get('/api/team-standings', (req, res) => {
+    const { mondayStr, today } = getWeekInfo();
+
+    const sqlStudents = `
+        SELECT s.class_name AS class_name,
+               COUNT(DISTINCT sess.date) AS active_days,
+               COUNT(DISTINCT CASE WHEN sess.medal = 'gold'
+                   THEN sess.student_id || '|' || sess.topic_id || '|' || sess.date END) AS golds
+        FROM students s
+        LEFT JOIN sessions sess
+               ON sess.student_id = s.id
+              AND sess.date >= ? AND sess.date <= ?
+        WHERE s.class_name IS NOT NULL AND s.class_name != ''
+        GROUP BY s.id
+    `;
+
+    const sqlClasses = `
+        SELECT class_name, COUNT(*) AS students
+        FROM students
+        WHERE class_name IS NOT NULL AND class_name != ''
+        GROUP BY class_name
+    `;
+
+    let perStudent = [];
+    let classSizes = [];
+
+    runAsync([
+        next => db.all(sqlStudents, [mondayStr, today], (e, rows) => { perStudent = rows || []; next(); }),
+        next => db.all(sqlClasses, [], (e, rows) => { classSizes = rows || []; next(); })
+    ], () => {
+        const byClass = {};
+        const ensure = name => byClass[name] || (byClass[name] = { class_name: name, students: 0, points: 0, scored: 0 });
+
+        classSizes.forEach(r => { ensure(r.class_name).students = r.students; });
+        perStudent.forEach(r => {
+            const t = ensure(r.class_name);
+            if ((r.active_days || 0) >= MIN_DAYS_FOR_SCORE) {
+                t.points += r.golds || 0;
+                t.scored += 1;
+            }
+        });
+
+        const teams = Object.values(byClass).map(t => ({
+            class_name: t.class_name,
+            students: t.students,
+            points: t.points,
+            scored: t.scored,
+            max: t.students * TOPICS_COUNT * MIN_DAYS_FOR_SCORE
+        })).sort((a, b) => b.points - a.points || a.class_name.localeCompare(b.class_name));
+
+        res.json({ weekStart: mondayStr, today, minDays: MIN_DAYS_FOR_SCORE, teams });
     });
 });
 
@@ -218,12 +288,7 @@ app.post('/admin/add-student', adminAuth, (req, res) => {
 });
 
 app.get('/admin', adminAuth, (req, res) => {
-    const today = getTodayDate();
-    const nowDate = new Date();
-    const dow = (nowDate.getDay() + 6) % 7; // 0 = понедельник
-    const monday = new Date(nowDate);
-    monday.setDate(monday.getDate() - dow);
-    const mondayStr = monday.toISOString().split('T')[0];
+    const { monday, mondayStr, today } = getWeekInfo();
 
     const weekDays = [];
     for (let i = 0; i < 5; i++) {
