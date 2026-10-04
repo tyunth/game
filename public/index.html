@@ -381,69 +381,92 @@
 
         function getGCD(a, b) { return b === 0 ? a : getGCD(b, a % b); }
         function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-        function getPrimeFactors(n) { const f = []; let d = 2; while(n>=2){ if(n%d===0){f.push(d); n/=d;} else d++; } return f; }
         
-        const coprimePairs = [[2,3], [3,4], [3,5], [4,5], [5,6], [5,7], [6,7]];
+        // Память о недавно показанных заданиях — не даём повторяться в пределах вкладки
+        const recentTasks = {};   // id темы -> список последних заданий
+
+        function generateTask(topicId) {
+            const list = recentTasks[topicId] || (recentTasks[topicId] = []);
+            let task = TOPICS[topicId].generate();
+            for (let i = 0; i < 12 && list.includes(task.text); i++) {
+                task = TOPICS[topicId].generate();
+            }
+            list.push(task.text);
+            if (list.length > 150) list.shift();
+            return task;
+        }
 
         const TOPICS = {
             'factor': {
                 id: 'factor', theory: '<b>Простое число</b> — это число, которое делится только на 1 и само на себя (2, 3, 5, 7, 11, 13...).<br><br>Любое составное число можно собрать из простых чисел, как из деталей лего. Чтобы разложить число, пробуй делить его на самые маленькие простые числа по порядку.<br><br><b>Пример: разложим 12</b><br>1) Делим на 2: 12 : 2 = 6<br>2) Снова делим на 2: 6 : 2 = 3<br>3) 3 делится только на 3: 3 : 3 = 1<br><br><i>Ответ: 12 = 2 × 2 × 3</i>',
                 generate: () => {
-                    const primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47];
-                    // Генерируем число, комбинируя небольшие простые множители, чтобы результат был в пределах 150
-                    let num = primes[randomInt(0, 5)] * primes[randomInt(0, 8)];
-                    return { text: `Разложи ${num}`, factors: getPrimeFactors(num), hint: `Начни делить ${num} с самых маленьких простых чисел (2, 3, 5) или вспомни таблицу умножения.` };
+                    // 2–4 простых множителя, число от 12 до 250.
+                    // Простые берём ≤ 19 — всё входит в клавиатуру (до 47).
+                    const smallPrimes = [2,3,5,7,11,13,17,19];
+                    let num = 0, factors = [];
+                    let guard = 0;
+                    do {
+                        const count = 2 + randomInt(0, 2);
+                        factors = [];
+                        for (let i = 0; i < count; i++) factors.push(smallPrimes[randomInt(0, smallPrimes.length - 1)]);
+                        num = factors.reduce((x, p) => x * p, 1);
+                    } while ((num < 12 || num > 250) && ++guard < 80);
+                    return { text: `Разложи ${num}`, factors: factors, hint: `Начни делить ${num} с самых маленьких простых чисел (2, 3, 5) или вспомни таблицу умножения.` };
                 }
             },
             'nod': {
                 id: 'nod', theory: '<b>НОД (Наибольший общий делитель)</b> — это самое большое число, на которое оба твоих числа делятся без остатка.<br><br><b>Как найти:</b><br>Разложи оба числа на простые множители, найди <i>одинаковые</i> и перемножь их.<br><br><b>Пример: НОД(12, 18)</b><br>12 = <b>2</b> × 2 × <b>3</b><br>18 = <b>2</b> × <b>3</b> × 3<br>Общие множители: 2 и 3.<br><i>НОД = 2 × 3 = 6</i><br><br>💡 <b>Лайфхаки:</b><br>• Если большее число делится на меньшее, то НОД — это меньшее число (например, НОД(5, 15) = 5).<br>• Если общих делителей вообще нет, НОД = 1.',
                 generate: () => {
                     const r = Math.random();
-                    let a, b, ans, hint;
-                    if (r < 0.2) { 
-                        // Взаимно простые
-                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
-                        a = pair[0] * randomInt(1, 3) + 1; b = pair[1] * randomInt(1, 3) + 1;
-                        if(getGCD(a,b) !== 1) { a = 7; b = 9; }
-                        ans = 1; hint = "У этих чисел нет общих делителей, кроме единицы. Они взаимно простые!";
-                    } else if (r < 0.4) {
+                    let a, b, hint;
+                    if (r < 0.15) {
+                        // Взаимно простые — подбираем, а не берём из 7 фиксированных пар
+                        let guard = 0;
+                        do { a = randomInt(5, 99); b = randomInt(5, 99); } while (getGCD(a, b) !== 1 && ++guard < 60);
+                        hint = "У этих чисел нет общих делителей, кроме единицы. Они взаимно простые!";
+                    } else if (r < 0.35) {
                         // Одно делится на другое
-                        ans = randomInt(4, 15);
-                        a = ans; b = ans * randomInt(2, 4);
-                        if(Math.random() > 0.5) [a,b] = [b,a];
+                        const ans = randomInt(2, 12);
+                        a = ans; b = ans * randomInt(2, 7);
+                        if (Math.random() > 0.5) [a,b] = [b,a];
                         hint = "Внимательно посмотри на числа. Большее делится на меньшее без остатка? Значит, меньшее и есть НОД.";
                     } else {
-                        // Обычные
-                        ans = randomInt(2, 9);
-                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
-                        a = ans * pair[0]; b = ans * pair[1];
+                        // Строим так, чтобы НОД был заранее известен: НОД(ans*u1, ans*u2) = ans
+                        const ans = randomInt(2, 12);
+                        let u1 = randomInt(1, 9), u2 = randomInt(1, 9);
+                        let guard = 0;
+                        while ((getGCD(u1, u2) !== 1 || u1 === u2) && ++guard < 60) u2 = randomInt(1, 9);
+                        a = ans * u1; b = ans * u2;
                         hint = "Разложи оба числа на простые множители и перемножь общие.";
                     }
-                    return { text: `НОД(${a}, ${b})`, answer: ans, hint: hint };
+                    return { text: `НОД(${a}, ${b})`, answer: getGCD(a, b), hint: hint };
                 }
             },
             'nok': {
                 id: 'nok', theory: '<b>НОК (Наименьшее общее кратное)</b> — это самое маленькое число, которое <i>само</i> делится на оба твоих числа без остатка.<br><br><b>Как найти:</b><br>Разложи числа на множители. Выпиши множители бóльшего числа и добавь к ним те множители меньшего, которых не хватает.<br><br><b>Пример: НОК(6, 8)</b><br>8 = 2 × 2 × 2<br>6 = 2 × <b>3</b> (двойка уже есть в восьмерке, не хватает только тройки)<br><i>НОК = 8 × 3 = 24</i><br><br>💡 <b>Лайфхаки:</b><br>• Если большее число делится на меньшее, то НОК — это бóльшее число (например, НОК(5, 15) = 15).<br>• Если у чисел нет общих делителей, просто перемножь их (например, НОК(3, 4) = 12).',
                 generate: () => {
                     const r = Math.random();
-                    let a, b, ans, hint;
-                    if (r < 0.2) {
-                        // Взаимно простые
-                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
-                        a = pair[0]; b = pair[1]; ans = a * b;
+                    let a, b, hint;
+                    if (r < 0.15) {
+                        // Взаимно простые — подбираем, а не берём из 7 фиксированных пар
+                        let guard = 0;
+                        do { a = randomInt(4, 45); b = randomInt(4, 45); } while (getGCD(a, b) !== 1 && ++guard < 60);
                         hint = "У этих чисел нет общих делителей (кроме 1). Их НОК равен их произведению!";
-                    } else if (r < 0.4) {
+                    } else if (r < 0.35) {
                         // Одно делится на другое
-                        a = randomInt(3, 10); b = a * randomInt(2, 4); ans = b;
-                        if(Math.random() > 0.5) [a,b] = [b,a];
+                        a = randomInt(3, 12); b = a * randomInt(2, 7);
+                        if (Math.random() > 0.5) [a,b] = [b,a];
                         hint = "Большее число уже делится на меньшее. Значит, большее число и есть НОК.";
                     } else {
-                        const gcd = randomInt(2, 6);
-                        const pair = coprimePairs[randomInt(0, coprimePairs.length-1)];
-                        a = gcd * pair[0]; b = gcd * pair[1]; ans = gcd * pair[0] * pair[1];
+                        // Строим так, чтобы общий множитель был известен: НОД(base*u1, base*u2) = base
+                        const base = randomInt(2, 9);
+                        let u1 = randomInt(2, 7), u2 = randomInt(2, 7);
+                        let guard = 0;
+                        while ((getGCD(u1, u2) !== 1 || u1 === u2) && ++guard < 60) u2 = randomInt(2, 7);
+                        a = base * u1; b = base * u2;
                         hint = "Выпиши множители большего числа и добавь недостающие от меньшего.";
                     }
-                    return { text: `НОК(${a}, ${b})`, answer: ans, hint: hint };
+                    return { text: `НОК(${a}, ${b})`, answer: (a * b) / getGCD(a, b), hint: hint };
                 }
             }
         };
@@ -476,7 +499,7 @@
             state.mistakes = 0; state.locked = false;
             clearReveal();
             updateDisplay();
-            state.currentTask = state.currentTopic.generate();
+            state.currentTask = generateTask(state.currentTopic.id);
             document.getElementById('ui-task').innerText = state.currentTask.text;
         }
 
