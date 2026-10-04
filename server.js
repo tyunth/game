@@ -63,6 +63,34 @@ db.serialize(() => {
 
     // Заполняем справочник классов текущими значениями
     db.run("INSERT OR IGNORE INTO classes (name) SELECT DISTINCT class_name FROM students WHERE class_name IS NOT NULL AND class_name != ''");
+
+    // --- Устройства (античит) ---
+    db.run(`CREATE TABLE IF NOT EXISTS devices (
+        hash TEXT PRIMARY KEY,
+        ua TEXT, platform TEXT, screen TEXT, viewport TEXT, dpr REAL,
+        lang TEXT, langs TEXT, tz TEXT, tz_offset INTEGER,
+        touch INTEGER, coarse INTEGER, cores INTEGER, memory INTEGER,
+        dnt TEXT, standalone INTEGER,
+        first_seen TEXT, last_seen TEXT
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS student_devices (
+        student_id TEXT, device_hash TEXT,
+        first_seen TEXT, last_seen TEXT, sessions INTEGER DEFAULT 0,
+        PRIMARY KEY (student_id, device_hash)
+    )`);
+
+    // Колонка отпечатка в логах и сессиях (ALTER — только если колонки ещё нет)
+    db.all("PRAGMA table_info(logs)", (e1, c1) => {
+        if (!c1.some(c => c.name === 'device_hash')) {
+            db.run("ALTER TABLE logs ADD COLUMN device_hash TEXT");
+        }
+    });
+    db.all("PRAGMA table_info(sessions)", (e2, c2) => {
+        if (!c2.some(c => c.name === 'device_hash')) {
+            db.run("ALTER TABLE sessions ADD COLUMN device_hash TEXT");
+        }
+    });
 });
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -227,7 +255,7 @@ app.get('/api/student-progress/:id', (req, res) => {
 });
 
 app.post('/api/save-result', (req, res) => {
-    const { studentId, topicId, medal, score, hintsUsed, hearts } = req.body;
+    const { studentId, topicId, medal, score, hintsUsed, hearts, deviceHash } = req.body;
     const today = getTodayDate();
     const yesterday = getYesterdayDate();
     const hints = hintsUsed || 0;
@@ -244,8 +272,8 @@ app.post('/api/save-result', (req, res) => {
         const owned = JSON.parse(student.achievements || '[]');
 
         // 1) Сохраняем сессию
-        db.run("INSERT INTO sessions (student_id, topic_id, date, medal, score, hints_used) VALUES (?, ?, ?, ?, ?, ?)",
-            [studentId, topicId, today, medal, score, hints], () => {
+        db.run("INSERT INTO sessions (student_id, topic_id, date, medal, score, hints_used, device_hash) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [studentId, topicId, today, medal, score, hints, deviceHash || null], () => {
 
             // 2) Обновляем стрик по конкретной теме (уровню)
             db.get("SELECT streak, last_played_date FROM topic_progress WHERE student_id = ? AND topic_id = ?",
@@ -257,6 +285,7 @@ app.post('/api/save-result', (req, res) => {
                 }
                 db.run("INSERT OR REPLACE INTO topic_progress (student_id, topic_id, streak, last_played_date) VALUES (?, ?, ?, ?)",
                     [studentId, topicId, topicStreak, today], () => {
+                    if (deviceHash) db.run("UPDATE student_devices SET sessions = sessions + 1, last_seen = ? WHERE student_id = ? AND device_hash = ?", [today, studentId, deviceHash]);
 
                     // 3) Данные для достижений (считаем параллельно)
                     const ctx = { medal, hints, heartsLeft, topicStreak, newStreak, games: 0, goldTopicsToday: 0, triedCalculator: false };
@@ -280,13 +309,133 @@ app.post('/api/save-result', (req, res) => {
 
 // Роут для приема логов
 app.post('/api/log', (req, res) => {
-    const { studentId, action, details } = req.body;
+    const { studentId, action, details, deviceHash } = req.body;
     if (!studentId) return res.status(400).send('No student');
-    db.run("INSERT INTO logs (student_id, action, details) VALUES (?, ?, ?)", 
-        [studentId, action, JSON.stringify(details)], (err) => {
+    db.run("INSERT INTO logs (student_id, action, details, device_hash) VALUES (?, ?, ?, ?)",
+        [studentId, action, JSON.stringify(details), deviceHash || null], (err) => {
         res.sendStatus(200);
     });
 });
+
+// --- УСТРОЙСТВА (античит: только предупреждаем, ничего не блокируем) ---
+const DEVICE_ALERT_THRESHOLD = 3;   // столько разных учеников на устройстве за день = подозрительно
+
+function readDevice(payload) {
+    if (!payload || !payload.hash) return null;
+    return {
+        hash: String(payload.hash).slice(0, 32),
+        ua: payload.ua || '',
+        platform: payload.platform || '',
+        screen: payload.screen || '',
+        viewport: payload.viewport || '',
+        dpr: payload.dpr || null,
+        lang: payload.lang || '',
+        langs: payload.langs || '',
+        tz: payload.tz || '',
+        tz_offset: (payload.tzOffset === undefined ? null : payload.tzOffset),
+        touch: payload.touch || 0,
+        coarse: payload.coarse ? 1 : 0,
+        cores: payload.cores || 0,
+        memory: payload.memory || null,
+        dnt: payload.dnt || '',
+        standalone: payload.standalone ? 1 : 0
+    };
+}
+
+app.post('/api/device/register', (req, res) => {
+    const studentId = req.body.studentId;
+    const dev = readDevice(req.body.device);
+    if (!studentId || !dev) return res.sendStatus(204);
+
+    const now = new Date().toISOString();
+
+    db.run(`INSERT INTO devices
+              (hash, ua, platform, screen, viewport, dpr, lang, langs, tz, tz_offset,
+               touch, coarse, cores, memory, dnt, standalone, first_seen, last_seen)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(hash) DO UPDATE SET
+              ua = excluded.ua, platform = excluded.platform, screen = excluded.screen,
+              viewport = excluded.viewport, dpr = excluded.dpr, lang = excluded.lang,
+              langs = excluded.langs, tz = excluded.tz, tz_offset = excluded.tz_offset,
+              touch = excluded.touch, coarse = excluded.coarse, cores = excluded.cores,
+              memory = excluded.memory, dnt = excluded.dnt, standalone = excluded.standalone,
+              last_seen = excluded.last_seen`,
+        [dev.hash, dev.ua, dev.platform, dev.screen, dev.viewport, dev.dpr, dev.lang, dev.langs,
+         dev.tz, dev.tz_offset, dev.touch, dev.coarse, dev.cores, dev.memory, dev.dnt,
+         dev.standalone, now, now], () => {
+
+        db.run("INSERT OR IGNORE INTO student_devices (student_id, device_hash, first_seen, last_seen, sessions) VALUES (?, ?, ?, ?, 0)",
+            [studentId, dev.hash, now, now], () => {
+            db.run("UPDATE student_devices SET last_seen = ? WHERE student_id = ? AND device_hash = ?",
+                [now, studentId, dev.hash], () => res.json({ ok: true, hash: dev.hash }));
+        });
+    });
+});
+
+app.post('/api/device/leave', (req, res) => {
+    const { studentId, deviceHash } = req.body;
+    if (!studentId || !deviceHash) return res.sendStatus(204);
+    db.run("UPDATE student_devices SET last_seen = ? WHERE student_id = ? AND device_hash = ?",
+        [new Date().toISOString(), studentId, deviceHash], () => res.sendStatus(200));
+});
+
+// Сигналы по устройствам за сегодня (тестовые исключены)
+function getDeviceSignals(today, cb) {
+    const exclude = " AND s.is_test = 0 AND s.class_name NOT IN (SELECT name FROM classes WHERE is_test = 1)";
+    const sqlPairs = `
+        SELECT l.device_hash AS hash, l.student_id AS sid, s.name AS name, s.class_name AS cls
+        FROM logs l JOIN students s ON s.id = l.student_id
+        WHERE l.device_hash IS NOT NULL AND date(l.created_at) = ?${exclude}`;
+    const sqlOverlap = `
+        SELECT a.device_hash AS hash
+        FROM logs a
+        JOIN logs b ON b.device_hash = a.device_hash AND b.student_id <> a.student_id
+                  AND b.action = 'answer_submit' AND b.created_at < a.created_at
+                  AND b.created_at >= datetime(a.created_at, '-10 minutes')
+        JOIN students sa ON sa.id = a.student_id
+        WHERE a.device_hash IS NOT NULL AND a.action = 'answer_submit'
+          AND date(a.created_at) = ?
+          AND sa.is_test = 0 AND sa.class_name NOT IN (SELECT name FROM classes WHERE is_test = 1)
+        GROUP BY a.device_hash`;
+
+    let pairs = [];
+    let overlaps = [];
+    runAsync([
+        next => db.all(sqlPairs, [today], (e, r) => { pairs = r || []; next(); }),
+        next => db.all(sqlOverlap, [today], (e, r) => { overlaps = r || []; next(); })
+    ], () => {
+        const overlapSet = new Set(overlaps.map(r => r.hash));
+        const byDevice = {};
+        const byStudent = {};
+        pairs.forEach(r => {
+            const d = byDevice[r.hash] || (byDevice[r.hash] = { hash: r.hash, count: 0, students: {}, names: [] });
+            if (!d.students[r.sid]) { d.students[r.sid] = true; d.count++; d.names.push({ name: r.name, cls: r.cls }); }
+            byStudent[r.sid] = r.hash;
+        });
+        Object.values(byDevice).forEach(d => { d.overlap = overlapSet.has(d.hash); delete d.students; });
+        cb({ byDevice, byStudent, overlaps: [...overlapSet] });
+    });
+}
+
+// Красивое название устройства из user-agent
+function describeDevice(d) {
+    if (!d) return '—';
+    const ua = d.ua || '';
+    let os = '💻 ОС неизвестна';
+    if (/iPhone/i.test(ua)) os = '📱 iPhone';
+    else if (/iPad/i.test(ua)) os = '📲 iPad';
+    else if (/Android/i.test(ua)) os = '🤖 Android';
+    else if (/Windows/i.test(ua)) os = '🖥 Windows';
+    else if (/Mac OS X/i.test(ua)) os = '💻 macOS';
+    else if (/Linux/i.test(ua)) os = '🐧 Linux';
+
+    let br = 'браузер';
+    if (/Edg\//i.test(ua)) br = 'Edge';
+    else if (/Chrome\//i.test(ua)) br = 'Chrome';
+    else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) br = 'Safari';
+    else if (/Firefox\//i.test(ua)) br = 'Firefox';
+    return `${os} · ${br}`;
+}
 
 
 // --- АДМИНКА ---
@@ -399,10 +548,12 @@ app.get('/admin', adminAuth, (req, res) => {
 
         let weekRows = [];
         let classRows = [];
+        let deviceMap = { byDevice: {}, byStudent: {}, overlaps: [] };
         runAsync([
             next => db.all("SELECT student_id, date, medal FROM sessions WHERE date >= ? AND date <= ?",
                 [mondayStr, today], (e, r) => { weekRows = r || []; next(); }),
-            next => db.all("SELECT name, is_test FROM classes ORDER BY name", [], (e, r) => { classRows = r || []; next(); })
+            next => db.all("SELECT name, is_test FROM classes ORDER BY name", [], (e, r) => { classRows = r || []; next(); }),
+            next => getDeviceSignals(today, m => { deviceMap = m; next(); })
         ], () => {
 
             // student_id -> { date -> 'gold' | 'silver' } (gold приоритетнее)
@@ -440,6 +591,7 @@ app.get('/admin', adminAuth, (req, res) => {
 
             let html = `<meta charset="UTF-8">${style}
                 <h2>Панель учителя</h2>
+                <div class="controls"><a href="/admin/devices">📱 Устройства и подозрения</a></div>
                 <div class="dashboard">Сегодня сыграло: <b>${playedToday}</b> из <b>${totalStudents}</b> учеников</div>
                 <div class="form-box">
                     <div style="font-weight:bold; margin-bottom:8px;">Добавить учеников</div>
@@ -477,7 +629,7 @@ app.get('/admin', adminAuth, (req, res) => {
                 <table id="studentsTable">
                     <thead><tr>
                         <th>Статус сегодня</th><th>Класс</th><th>Ученик</th>
-                        <th>Прогресс за неделю</th><th>Стрик</th><th>Золото</th><th>Игр</th><th>Логи</th>
+                        <th>Прогресс за неделю</th><th>Стрик</th><th>Золото</th><th>Игр</th><th>Устройство</th><th>Логи</th>
                     </tr></thead>
                     <tbody>`;
             rows.forEach(r => {
@@ -494,6 +646,13 @@ app.get('/admin', adminAuth, (req, res) => {
 
                 const test = isTestStudent(r);
 
+                const devHash = deviceMap.byStudent[r.id];
+                const devInfo = devHash ? deviceMap.byDevice[devHash] : null;
+                const suspicious = !!devInfo && (devInfo.count >= DEVICE_ALERT_THRESHOLD || devInfo.overlap);
+                const devCell = devHash
+                    ? `<code>${devHash.slice(0, 8)}</code>${suspicious ? ' <b title="Несколько учеников с одного устройства">⚠️</b>' : ''}`
+                    : '—';
+
                 html += `<tr data-class="${r.class_name || ''}" style="${test ? 'opacity:.55;' : ''}">
                     <td class="status">${status}</td>
                     <td>${r.class_name || '-'}${test ? ' 🧪' : ''}</td>
@@ -502,6 +661,7 @@ app.get('/admin', adminAuth, (req, res) => {
                     <td>${r.streak}</td>
                     <td>${r.total_gold}</td>
                     <td>${r.total_games}</td>
+                    <td>${devCell}</td>
                     <td style="white-space:nowrap;">
                         <a href="/admin/logs/${r.id}">Логи</a> ·
                         <a href="/admin/edit/${r.id}">Изменить</a> ·
@@ -552,6 +712,58 @@ app.get('/admin', adminAuth, (req, res) => {
                 </script>`;
 
             res.send(html);
+        });
+    });
+});
+
+// Страница устройств: кто с одного телефона занимался
+app.get('/admin/devices', adminAuth, (req, res) => {
+    const today = getTodayDate();
+    getDeviceSignals(today, sig => {
+        const hashes = Object.keys(sig.byDevice);
+        if (!hashes.length) {
+            return res.send('<meta charset="UTF-8"><p style="font-family:sans-serif; padding:20px;">Данных об устройствах пока нет. <a href="/admin">← Назад</a></p>');
+        }
+        db.all("SELECT * FROM devices", [], (e, devs) => {
+            const info = {};
+            devs.forEach(d => { info[d.hash] = d; });
+            const list = hashes.map(h => ({ h, s: sig.byDevice[h], d: info[h] })).sort((a, b) => b.s.count - a.s.count);
+
+            const style = '<style>body{font-family:sans-serif; padding:20px; color:#333;} table{border-collapse:collapse; width:100%; font-size:0.95rem;} th,td{border:1px solid #ddd; padding:6px 8px; text-align:left;} th{background:#f4f7f9;} .warn{background:#fff4e5;} code{background:#f0f0f0; padding:1px 4px;} button{padding:8px 14px;}</style>';
+
+            let html = `<meta charset="UTF-8">${style}
+                <h2>Устройства (сегодня)</h2>
+                <p>Порог подозрения: <b>${DEVICE_ALERT_THRESHOLD}</b> разных ученика с одного устройства за день. Тестовые ученики и тестовые классы не учитываются.</p>
+                <form action="/admin/devices/purge" method="POST" onsubmit="return confirm('Удалить всю статистику устройств и отпечатки из логов?');">
+                    <button type="submit">Очистить статистику устройств</button>
+                </form>
+                <table><tr><th>Отпечаток</th><th>Устройство</th><th>Сегодня заходили</th><th>Кто</th><th>Экран</th><th>Последняя активность</th></tr>`;
+
+            list.forEach(x => {
+                const d = x.d || {};
+                const warn = x.s.count >= DEVICE_ALERT_THRESHOLD || x.s.overlap;
+                const who = (x.s.names || []).map(n => `${n.name} (${n.cls || '-'})`).join(', ');
+                html += `<tr class="${warn ? 'warn' : ''}">
+                    <td><code>${x.h.slice(0, 8)}</code>${warn ? ' ⚠️' : ''}</td>
+                    <td>${describeDevice(d)}</td>
+                    <td>${x.s.count}${x.s.overlap ? ' · пересечение по времени' : ''}</td>
+                    <td>${who}</td>
+                    <td>${d.screen || '—'}</td>
+                    <td>${(d.last_seen || '').slice(0, 16).replace('T', ' ')}</td>
+                </tr>`;
+            });
+
+            html += '</table><p><a href="/admin">← Назад</a></p>';
+            res.send(html);
+        });
+    });
+});
+
+// Полная очистка данных об устройствах (152-ФЗ: нужно уметь удалять)
+app.post('/admin/devices/purge', adminAuth, (req, res) => {
+    db.run("UPDATE logs SET device_hash = NULL", () => {
+        db.run("DELETE FROM student_devices", () => {
+            db.run("DELETE FROM devices", () => res.redirect('/admin/devices'));
         });
     });
 });

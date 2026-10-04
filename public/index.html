@@ -179,7 +179,7 @@
 
     <script>
         let allStudents = [];
-        let state = { studentId: null, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
+        let state = { studentId: null, deviceHash: null, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
 
         // Справочник достижений приходит с сервера (единый источник правды)
         let ACH_CATALOG = {};
@@ -196,10 +196,64 @@
             return a ? `${a.icon} ${a.title}` : id;
         }
 
+        // Сбор сведений об устройстве — только пассивные API, никаких запросов разрешений
+        function collectFingerprint() {
+            const d = {
+                ua: navigator.userAgent,
+                platform: navigator.platform || '',
+                screen: `${screen.width}x${screen.height}/${screen.availWidth}x${screen.availHeight}`,
+                viewport: `${window.innerWidth}x${window.innerHeight}`,
+                dpr: window.devicePixelRatio,
+                lang: navigator.language,
+                langs: (navigator.languages || []).join(','),
+                tz: Intl.DateTimeResolver().resolvedOptions().timeZone,
+                tzOffset: new Date().getTimezoneOffset(),
+                touch: navigator.maxTouchPoints || 0,
+                coarse: window.matchMedia('(pointer: coarse)').matches ? 1 : 0,
+                cores: navigator.hardwareConcurrency || 0,
+                memory: navigator.deviceMemory || null,
+                dnt: navigator.doNotTrack || '',
+                standalone: window.matchMedia('(display-mode: standalone)').matches ? 1 : 0
+            };
+            const key = [d.ua, d.platform, d.screen, d.lang, d.tz, d.cores].join('|');
+            return { data: d, key: key };
+        }
+
+        function simpleHash(str) {
+            let h = 5381;
+            for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
+            return h.toString(16).padStart(8, '0');
+        }
+
+        async function initDevice() {
+            const info = collectFingerprint();
+            let hash = null;
+            try {
+                if (window.crypto && window.crypto.subtle) {
+                    const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(info.key));
+                    hash = Array.from(new Uint8Array(buf)).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+            } catch (e) { hash = null; }
+            if (!hash) hash = simpleHash(info.key);
+            state.deviceHash = hash;
+            return { hash: hash, data: info.data };
+        }
+
+        async function registerDevice() {
+            if (!state.studentId) return;
+            try {
+                const dev = await initDevice();
+                await fetch('/api/device/register', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentId: state.studentId, device: Object.assign({ hash: dev.hash }, dev.data) })
+                });
+            } catch (e) { /* молча игнорируем */ }
+        }
+
         const Logger = {
             send: (action, details = {}) => {
                 if(!state.studentId) return;
-                fetch('/api/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({studentId: state.studentId, action, details})});
+                fetch('/api/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({studentId: state.studentId, action, details, deviceHash: state.deviceHash})});
             }
         };
 
@@ -239,6 +293,7 @@
                 if (saved && allStudents.find(s => s.id === saved)) {
                     state.studentId = saved;
                     Logger.send('session_resume', { event: 'Автоматический вход' });
+                    registerDevice();
                     loadProgress();
                     showScreen('map-screen');
                 }
@@ -259,11 +314,16 @@
             state.studentId = sId;
             localStorage.setItem('studentId', sId);
             Logger.send('login', { event: 'Обычный вход' });
+            registerDevice();
             loadProgress();
             showScreen('map-screen');
         }
 
         function logout() {
+            fetch('/api/device/leave', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentId: state.studentId, deviceHash: state.deviceHash })
+            }).catch(() => {});
             localStorage.removeItem('studentId');
             state.studentId = null;
             showScreen('login-screen');
@@ -543,7 +603,7 @@
 
             fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts })
+                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts, deviceHash: state.deviceHash })
             }).then(r => r.json()).then(resp => {
                 const el = document.getElementById('ui-result-ach');
                 if (el && resp.newAchievements && resp.newAchievements.length) {
