@@ -35,8 +35,8 @@
         /* Игровой экран */
         .game-header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; margin-bottom: 20px; }
         .timer { color: var(--muted); font-family: monospace; font-size: 1.2rem; display: flex; align-items: center; gap: 5px; }
-        .tools { display: flex; gap: 10px; }
-        .btn-tool { background: #f1c40f; color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+        .btn-tool { background: #f1c40f; color: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.1rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .btn-tool.theory { background: #3498db; }
 
         .task-container { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 400px; margin-bottom: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -50,7 +50,7 @@
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: left; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: left; max-height: 80vh; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -106,6 +106,9 @@
             <div class="tools">
                 <button class="btn-tool theory" onclick="showTheoryModal()">📖</button>
                 <button class="btn-tool" onclick="showHint()">💡</button>
+                <button class="btn-tool" onclick="showPrimesTable()" title="Таблица простых чисел">🔢</button>
+                <button class="btn-tool" onclick="showMultTable()" title="Таблица умножения">✖️</button>
+                <button class="btn-tool" onclick="openCalculator()" title="Калькулятор">🧮</button>
             </div>
             <div id="ui-score" style="color: var(--primary); font-weight: bold;">0/5</div>
         </div>
@@ -329,6 +332,7 @@
             document.getElementById('keyboard-prime').style.display = isFactor ? 'grid' : 'none';
             
             showScreen('game-screen');
+            startTimer(); // таймер идёт на все 5 заданий
             nextTask();
         }
 
@@ -344,7 +348,6 @@
             updateDisplay();
             state.currentTask = state.currentTopic.generate();
             document.getElementById('ui-task').innerText = state.currentTask.text;
-            startTimer(); // <- запуск секундомера
         }
 
         function appendNum(num) { if (state.currentInput.length < 5) { state.currentInput += num; updateDisplay(); } }
@@ -358,7 +361,6 @@
         }
 
         function submitAnswer(isCorrect, input, topicId) {
-            stopTimer();
             const timeTaken = Math.round((Date.now() - state.startTime) / 1000);
             Logger.send('answer_submit', { topic: topicId, correct: isCorrect, input, timeSec: timeTaken });
             handleResult(isCorrect);
@@ -397,6 +399,34 @@
             openGenericModal('Правило', state.currentTopic.theory);
         }
 
+        function showPrimesTable() {
+            Logger.send('open_primes_table', { topic: state.currentTopic.id });
+            const primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
+            let rows = '';
+            for (let i = 0; i < primes.length; i += 5) {
+                rows += '<tr>' + primes.slice(i, i + 5).map(p => `<td style="padding:6px; text-align:center; border:1px solid #ddd;">${p}</td>`).join('') + '</tr>';
+            }
+            openGenericModal('🔢 Таблица простых чисел', `<table style="width:100%; border-collapse:collapse;">${rows}</table>`);
+        }
+
+        function showMultTable() {
+            Logger.send('open_mult_table', { topic: state.currentTopic.id });
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:0.85rem;">';
+            for (let i = 1; i <= 10; i++) {
+                html += '<tr>' + Array.from({ length: 10 }, (_, j) => `<td style="padding:4px; text-align:center; border:1px solid #ddd;">${i * (j + 1)}</td>`).join('') + '</tr>';
+            }
+            openGenericModal('✖️ Таблица умножения', html + '</table>');
+        }
+
+        function openCalculator() {
+            const firstTime = !localStorage.getItem('calcTried');
+            if (firstTime) localStorage.setItem('calcTried', '1');
+            Logger.send('open_calculator', { topic: state.currentTopic.id, firstTime });
+            openGenericModal('🧮 Калькулятор',
+                '<div style="text-align:center; color:var(--danger); font-weight:bold; font-size:1.4rem; margin:10px 0;">ЗАПРЕЩЕНКА! 🚫</div>' +
+                '<div style="text-align:center;">Калькулятором пользоваться нельзя — считай в уме!</div>');
+        }
+
         function showHint() {
             state.hintsUsed++;
             Logger.send('use_hint', { topic: state.currentTopic.id, currentTask: state.currentTask.text });
@@ -419,6 +449,7 @@
         function closeModal() { document.getElementById('generic-modal').classList.remove('active'); }
 
         function endSession(medal) {
+            stopTimer();
             Logger.send('session_end', { topic: state.currentTopic.id, medal, score: state.score });
             showScreen('result-screen');
             document.getElementById('ui-medal').innerText = medal === 'gold' ? '🥇' : '🥈';
