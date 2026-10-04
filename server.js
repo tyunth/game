@@ -47,7 +47,22 @@ db.serialize(() => {
         last_played_date TEXT,
         PRIMARY KEY (student_id, topic_id)
     )`);
-    
+
+    // Справочник классов (нужен, чтобы помечать целый класс как тестовый)
+    db.run(`CREATE TABLE IF NOT EXISTS classes (
+        name TEXT PRIMARY KEY,
+        is_test INTEGER DEFAULT 0
+    )`);
+
+    // Флаг «тестовый» у ученика. ALTER выполняем, только если колонки ещё нет.
+    db.all("PRAGMA table_info(students)", (e, cols) => {
+        if (!cols.some(c => c.name === 'is_test')) {
+            db.run("ALTER TABLE students ADD COLUMN is_test INTEGER DEFAULT 0");
+        }
+    });
+
+    // Заполняем справочник классов текущими значениями
+    db.run("INSERT OR IGNORE INTO classes (name) SELECT DISTINCT class_name FROM students WHERE class_name IS NOT NULL AND class_name != ''");
 });
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -119,7 +134,8 @@ app.get('/api/achievements', (req, res) => {
 
 // --- API РОУТЫ ---
 app.get('/api/students', (req, res) => {
-    db.all("SELECT id, name, class_name FROM students ORDER BY class_name, name", [], (err, rows) => {
+    // Сортируем по логину (id), а показываем имя
+    db.all("SELECT id, name, class_name, is_test FROM students ORDER BY class_name, id", [], (err, rows) => {
         res.json(rows);
     });
 });
@@ -139,14 +155,18 @@ app.get('/api/team-standings', (req, res) => {
                ON sess.student_id = s.id
               AND sess.date >= ? AND sess.date <= ?
         WHERE s.class_name IS NOT NULL AND s.class_name != ''
+          AND s.is_test = 0
+          AND s.class_name NOT IN (SELECT name FROM classes WHERE is_test = 1)
         GROUP BY s.id
     `;
 
     const sqlClasses = `
-        SELECT class_name, COUNT(*) AS students
-        FROM students
-        WHERE class_name IS NOT NULL AND class_name != ''
-        GROUP BY class_name
+        SELECT s.class_name AS class_name, COUNT(*) AS students
+        FROM students s
+        WHERE s.class_name IS NOT NULL AND s.class_name != ''
+          AND s.is_test = 0
+          AND s.class_name NOT IN (SELECT name FROM classes WHERE is_test = 1)
+        GROUP BY s.class_name
     `;
 
     let perStudent = [];
@@ -278,12 +298,80 @@ const adminAuth = (req, res, next) => {
     else res.status(401).setHeader('WWW-Authenticate', 'Basic').send('');
 };
 
+// Массовое добавление: payload = JSON [{ id, name, class_name, is_test }]
 app.post('/admin/add-student', adminAuth, (req, res) => {
-    const { student_id, student_name, class_name } = req.body;
-    if (student_id && student_name && class_name) {
-        db.run("INSERT OR IGNORE INTO students (id, name, class_name) VALUES (?, ?, ?)", 
-            [student_id, student_name, class_name]);
-    }
+    let items = [];
+    try { items = JSON.parse(req.body.payload || '[]'); } catch (e) { items = []; }
+    items = items.filter(it => it && it.id && it.name);
+    if (!items.length) return res.redirect('/admin');
+
+    runAsync(items.map(it => next => {
+        const cls = (it.class_name || '').trim();
+        db.run("INSERT OR IGNORE INTO students (id, name, class_name, is_test) VALUES (?, ?, ?, ?)",
+            [it.id.trim(), it.name.trim(), cls, it.is_test ? 1 : 0], () => {
+            if (cls) db.run("INSERT OR IGNORE INTO classes (name) VALUES (?)", [cls], () => next());
+            else next();
+        });
+    }), () => res.redirect('/admin'));
+});
+
+// Редактирование ученика
+app.get('/admin/edit/:id', adminAuth, (req, res) => {
+    db.get("SELECT id, name, class_name, is_test FROM students WHERE id = ?", [req.params.id], (err, s) => {
+        if (err || !s) return res.status(404).send('Ученик не найден');
+        db.all("SELECT name, is_test FROM classes ORDER BY name", [], (e2, classes) => {
+            const opts = classes.map(c =>
+                `<option value="${c.name}" ${c.name === s.class_name ? 'selected' : ''}>${c.name}${c.is_test ? ' (тест)' : ''}</option>`
+            ).join('');
+            res.send(`<meta charset="UTF-8">
+<style>body{font-family:sans-serif; padding:20px;} .box{background:#eee; padding:16px; border-radius:8px; max-width:420px;}
+input,select{padding:8px; font-size:1rem; margin:4px 0;} button{padding:10px 18px; font-size:1rem; cursor:pointer;}</style>
+<h2>Ученик: ${s.id}</h2>
+<form class="box" action="/admin/edit/${s.id}" method="POST">
+    <div><input type="text" name="name" value="${s.name}" required></div>
+    <div><select name="class_name">${opts}</select></div>
+    <div><label><input type="checkbox" name="is_test" value="1" ${s.is_test ? 'checked' : ''}> тестовый аккаунт</label></div>
+    <div style="margin-top:10px;"><button type="submit">Сохранить</button> <a href="/admin">← Назад</a></div>
+</form>`);
+        });
+    });
+});
+
+app.post('/admin/edit/:id', adminAuth, (req, res) => {
+    const { name, class_name, is_test } = req.body;
+    const cls = (class_name || '').trim();
+    db.run("UPDATE students SET name = ?, class_name = ?, is_test = ? WHERE id = ?",
+        [name || req.params.id, cls, is_test ? 1 : 0, req.params.id], (e) => {
+        if (cls) db.run("INSERT OR IGNORE INTO classes (name) VALUES (?)", [cls]);
+        res.redirect('/admin');
+    });
+});
+
+// Удаление ученика вместе с его сессиями, прогрессом и логами
+app.post('/admin/delete/:id', adminAuth, (req, res) => {
+    const id = req.params.id;
+    db.run("DELETE FROM sessions WHERE student_id = ?", [id], () => {
+        db.run("DELETE FROM topic_progress WHERE student_id = ?", [id], () => {
+            db.run("DELETE FROM logs WHERE student_id = ?", [id], () => {
+                db.run("DELETE FROM students WHERE id = ?", [id], () => res.redirect('/admin'));
+            });
+        });
+    });
+});
+
+// Классы: переключить флаг «тестовый»
+app.post('/admin/class/toggle', adminAuth, (req, res) => {
+    const cls = (req.body.class_name || '').trim();
+    if (!cls) return res.redirect('/admin');
+    db.run("INSERT OR IGNORE INTO classes (name) VALUES (?)", [cls], () => {
+        db.run("UPDATE classes SET is_test = ? WHERE name = ?", [req.body.is_test ? 1 : 0, cls], () => res.redirect('/admin'));
+    });
+});
+
+// Классы: добавить новый
+app.post('/admin/class/add', adminAuth, (req, res) => {
+    const cls = (req.body.class_name || '').trim();
+    if (cls) db.run("INSERT OR IGNORE INTO classes (name) VALUES (?)", [cls]);
     res.redirect('/admin');
 });
 
@@ -298,20 +386,24 @@ app.get('/admin', adminAuth, (req, res) => {
     }
 
     const mainQuery = `
-        SELECT s.id, s.name, s.class_name, s.streak, s.last_played_date,
+        SELECT s.id, s.name, s.class_name, s.streak, s.last_played_date, s.is_test,
             COUNT(sess.id) as total_games,
             SUM(CASE WHEN sess.medal = 'gold' THEN 1 ELSE 0 END) as total_gold
         FROM students s
         LEFT JOIN sessions sess ON s.id = sess.student_id
-        GROUP BY s.id ORDER BY s.class_name, s.name
+        GROUP BY s.id ORDER BY s.class_name, s.id
     `;
 
     db.all(mainQuery, [], (err, rows) => {
         if (err) return res.status(500).send('Ошибка БД');
 
-        // Сессии за текущую неделю (Пн..сегодня)
-        db.all("SELECT student_id, date, medal FROM sessions WHERE date >= ? AND date <= ?",
-            [mondayStr, today], (err2, weekRows) => {
+        let weekRows = [];
+        let classRows = [];
+        runAsync([
+            next => db.all("SELECT student_id, date, medal FROM sessions WHERE date >= ? AND date <= ?",
+                [mondayStr, today], (e, r) => { weekRows = r || []; next(); }),
+            next => db.all("SELECT name, is_test FROM classes ORDER BY name", [], (e, r) => { classRows = r || []; next(); })
+        ], () => {
 
             // student_id -> { date -> 'gold' | 'silver' } (gold приоритетнее)
             const weekBest = {};
@@ -321,9 +413,15 @@ app.get('/admin', adminAuth, (req, res) => {
                 else if (!byDay[r.date]) byDay[r.date] = 'silver';
             });
 
+            const testClasses = new Set(classRows.filter(c => c.is_test).map(c => c.name));
+            const isTestStudent = r => !!r.is_test || testClasses.has(r.class_name);
+
             const classes = [...new Set(rows.map(r => r.class_name).filter(Boolean))].sort();
-            const playedToday = rows.filter(r => weekBest[r.id] && weekBest[r.id][today]).length;
-            const totalStudents = rows.length;
+            const rated = rows.filter(r => !isTestStudent(r));
+            const playedToday = rated.filter(r => weekBest[r.id] && weekBest[r.id][today]).length;
+            const totalStudents = rated.length;
+            const classNames = classRows.length ? classRows.map(c => c.name) : classes;
+            const classOptions = classNames.map(c => `<option value="${c}">${c}</option>`).join('');
 
             const style = `<style>
                 body{font-family:sans-serif; padding:20px; color:#333;}
@@ -344,15 +442,30 @@ app.get('/admin', adminAuth, (req, res) => {
                 <h2>Панель учителя</h2>
                 <div class="dashboard">Сегодня сыграло: <b>${playedToday}</b> из <b>${totalStudents}</b> учеников</div>
                 <div class="form-box">
-                    <form action="/admin/add-student" method="POST" style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <input type="text" name="student_id" placeholder="Логин (a1)" required>
-                        <input type="text" name="student_name" placeholder="Фамилия Имя" required>
-                        <select name="class_name">
-                            <option value="5 А">5 А</option>
-                            <option value="5 Б">5 Б</option>
-                            <option value="5 В">5 В</option>
-                        </select>
-                        <button type="submit">+ Добавить ученика</button>
+                    <div style="font-weight:bold; margin-bottom:8px;">Добавить учеников</div>
+                    <form action="/admin/add-student" method="POST" id="addForm">
+                        <div id="addRows"></div>
+                        <input type="hidden" name="payload" id="addPayload">
+                        <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
+                            <button type="button" onclick="addRow()">+ Добавить ещё</button>
+                            <button type="submit">Сохранить всё</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-box">
+                    <div style="font-weight:bold; margin-bottom:8px;">Классы</div>
+                    <div id="classList" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                        ${classRows.map(c => `
+                            <form action="/admin/class/toggle" method="POST" style="display:flex; gap:4px; align-items:center;">
+                                <input type="hidden" name="class_name" value="${c.name}">
+                                <input type="hidden" name="is_test" value="${c.is_test ? '0' : '1'}">
+                                <span>${c.name}</span>
+                                <button type="submit">${c.is_test ? '🧪 тест' : 'обычный'}</button>
+                            </form>`).join('') || '<i>Классов пока нет</i>'}
+                    </div>
+                    <form action="/admin/class/add" method="POST" style="display:flex; gap:8px;">
+                        <input type="text" name="class_name" placeholder="Название класса" required>
+                        <button type="submit">+ Класс</button>
                     </form>
                 </div>
                 <div class="controls">Класс:
@@ -379,26 +492,63 @@ app.get('/admin', adminAuth, (req, res) => {
                     return `<span class="day" title="${label}">${icon}</span>`;
                 }).join('');
 
-                html += `<tr data-class="${r.class_name || ''}">
+                const test = isTestStudent(r);
+
+                html += `<tr data-class="${r.class_name || ''}" style="${test ? 'opacity:.55;' : ''}">
                     <td class="status">${status}</td>
-                    <td>${r.class_name || '-'}</td>
+                    <td>${r.class_name || '-'}${test ? ' 🧪' : ''}</td>
                     <td style="text-align:left;">${r.name}</td>
                     <td class="week">${weekCell}</td>
                     <td>${r.streak}</td>
                     <td>${r.total_gold}</td>
                     <td>${r.total_games}</td>
-                    <td><a href="/admin/logs/${r.id}">Смотреть</a></td>
+                    <td style="white-space:nowrap;">
+                        <a href="/admin/logs/${r.id}">Логи</a> ·
+                        <a href="/admin/edit/${r.id}">Изменить</a> ·
+                        <form action="/admin/delete/${r.id}" method="POST" style="display:inline;" onsubmit="return confirm('Удалить ученика ${r.id}? Его сессии и логи тоже будут удалены.');">
+                            <button type="submit" style="padding:2px 8px; cursor:pointer;">Удалить</button>
+                        </form>
+                    </td>
                 </tr>`;
             });
 
             html += `</tbody></table>
                 <script>
+                    var CLASS_OPTIONS = '${classOptions}';
+
+                    function addRow() {
+                        var div = document.getElementById('addRows');
+                        var row = document.createElement('div');
+                        row.style.cssText = 'display:flex; gap:8px; margin-bottom:6px; flex-wrap:wrap;';
+                        row.innerHTML = '<input type="text" placeholder="Логин (a1)">'
+                            + ' <input type="text" placeholder="Фамилия Имя">'
+                            + ' <select>' + CLASS_OPTIONS + '</select>'
+                            + ' <label><input type="checkbox"> тест</label>';
+                        div.appendChild(row);
+                    }
+
+                    function collectRows() {
+                        var items = [];
+                        document.querySelectorAll('#addRows > div').forEach(function (row) {
+                            var i = row.querySelectorAll('input[type=text]');
+                            var sel = row.querySelector('select');
+                            var chk = row.querySelector('input[type=checkbox]');
+                            items.push({ id: i[0].value.trim(), name: i[1].value.trim(), class_name: sel ? sel.value : '', is_test: chk ? chk.checked : false });
+                        });
+                        items = items.filter(function (x) { return x.id && x.name; });
+                        document.getElementById('addPayload').value = JSON.stringify(items);
+                        if (!items.length) alert('Заполните логин и имя хотя бы для одного ученика');
+                    }
+
                     function filterTable() {
-                        const v = document.getElementById('classFilter').value;
-                        document.querySelectorAll('#studentsTable tbody tr').forEach(tr => {
+                        var v = document.getElementById('classFilter').value;
+                        document.querySelectorAll('#studentsTable tbody tr').forEach(function (tr) {
                             tr.style.display = (!v || tr.getAttribute('data-class') === v) ? '' : 'none';
                         });
                     }
+
+                    addRow();
+                    document.getElementById('addForm').addEventListener('submit', collectRows);
                 </script>`;
 
             res.send(html);

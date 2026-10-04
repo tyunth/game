@@ -249,7 +249,7 @@
             const cls = document.getElementById('class-select').value;
             const studSelect = document.getElementById('student-select');
             studSelect.innerHTML = '<option value="" disabled selected>Выбери свое имя</option>';
-            allStudents.filter(s => s.class_name === cls).forEach(s => { studSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`; });
+            allStudents.filter(s => s.class_name === cls).forEach(s => { studSelect.innerHTML += `<option value="${s.id}">${s.name}${s.is_test ? ' · тест' : ''}</option>`; });
             studSelect.disabled = false;
         }
 
