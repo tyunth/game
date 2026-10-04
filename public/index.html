@@ -61,6 +61,8 @@
         .task-container { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 400px; margin-bottom: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .answer-display { font-size: 2.5rem; min-height: 60px; border-bottom: 3px solid var(--primary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .answer-display.error { color: var(--danger); border-color: var(--danger); }
+        .answer-display.correct { color: var(--success); border-color: var(--success); }
+        #ui-retry { color: #e67e22; font-weight: bold; min-height: 1.2em; margin-top: 8px; }
 
         .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
         .numpad button { background: white; border: none; padding: 15px 0; font-size: 1.5rem; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
@@ -140,6 +142,8 @@
         <div class="task-container">
             <div id="ui-task" style="font-size: 1.8rem; font-weight: bold; margin-bottom: 20px;"></div>
             <div class="answer-display" id="ui-answer"></div>
+            <div id="ui-retry"></div>
+            <button id="btn-next" class="btn" style="display:none; margin-top:10px;" onclick="nextAfterReveal()">Дальше</button>
         </div>
 
         <div id="keyboard-standard" class="numpad">
@@ -179,7 +183,7 @@
 
     <script>
         let allStudents = [];
-        let state = { studentId: null, deviceHash: null, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
+        let state = { studentId: null, deviceHash: null, mistakes: 0, locked: false, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
 
         // Справочник достижений приходит с сервера (единый источник правды)
         let ACH_CATALOG = {};
@@ -320,6 +324,7 @@
         }
 
         function logout() {
+            clearReveal();
             fetch('/api/device/leave', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studentId: state.studentId, deviceHash: state.deviceHash })
@@ -460,6 +465,7 @@
 
         function goToMap(fromGame) {
             stopTimer();
+            clearReveal();
             if (fromGame) Logger.send('exit_level', { topic: state.currentTopic.id, score: state.score });
             loadProgress();
             showScreen('map-screen');
@@ -467,14 +473,25 @@
 
         function nextTask() {
             state.currentInput = ''; state.currentFactors = []; state.startTime = Date.now();
+            state.mistakes = 0; state.locked = false;
+            clearReveal();
             updateDisplay();
             state.currentTask = state.currentTopic.generate();
             document.getElementById('ui-task').innerText = state.currentTask.text;
         }
 
-        function appendNum(num) { if (state.currentInput.length < 5) { state.currentInput += num; updateDisplay(); } }
-        function appendFactor(num) { state.currentFactors.push(num); updateDisplay(); }
-        function clearAnswer() { state.currentInput = ''; state.currentFactors = []; updateDisplay(); }
+        // Сброс показа правильного ответа и кнопки «Дальше»
+        function clearReveal() {
+            if (revealTimer) { clearInterval(revealTimer); revealTimer = null; }
+            const btn = document.getElementById('btn-next');
+            if (btn) btn.style.display = 'none';
+            const r = document.getElementById('ui-retry');
+            if (r) r.innerText = '';
+        }
+
+        function appendNum(num) { if (state.locked) return; if (state.currentInput.length < 5) { state.currentInput += num; updateDisplay(); } }
+        function appendFactor(num) { if (state.locked) return; state.currentFactors.push(num); updateDisplay(); }
+        function clearAnswer() { if (state.locked) return; state.currentInput = ''; state.currentFactors = []; updateDisplay(); }
         
         function updateDisplay() {
             const d = document.getElementById('ui-answer');
@@ -489,29 +506,75 @@
         }
 
         function checkAnswer() {
-            if (!state.currentInput) return;
+            if (state.locked || !state.currentInput) return;
             submitAnswer(parseInt(state.currentInput) === state.currentTask.answer, state.currentInput, state.currentTopic.id);
         }
 
         function checkFactorAnswer() {
-            if (!state.currentFactors.length) return;
+            if (state.locked || !state.currentFactors.length) return;
             const userAns = [...state.currentFactors].sort((a, b) => a - b).join(',');
             const trueAns = [...state.currentTask.factors].sort((a, b) => a - b).join(',');
             submitAnswer(userAns === trueAns, userAns, 'factor');
         }
 
+        let revealTimer = null;
+
         function handleResult(isCorrect) {
             if (isCorrect) {
                 state.score++; document.getElementById('ui-score').innerText = `${state.score}/5`;
                 if (state.score >= 5) endSession('gold'); else nextTask();
-            } else {
-                document.getElementById('ui-answer').classList.add('error');
-                state.hearts--; updateHearts();
-                setTimeout(() => {
-                    if (state.hearts <= 0) endSession('silver');
-                    else { clearAnswer(); nextTask(); }
-                }, 500);
+                return;
             }
+
+            // Ошибка — всегда минус сердце
+            state.mistakes++;
+            state.hearts--; updateHearts();
+
+            // Либо сердца кончились, либо вторая ошибка — показываем верный ответ
+            // (задание не засчитываем; если сердца кончились, nextAfterReveal завершит игру)
+            if (state.hearts <= 0 || state.mistakes >= 2) {
+                showCorrectAnswer();
+                return;
+            }
+
+            // Первая ошибка: остаёмся на этом же примере, можно попробовать снова
+            const d = document.getElementById('ui-answer');
+            document.getElementById('ui-retry').innerText = 'Попробуй ещё раз';
+            state.currentInput = ''; state.currentFactors = [];
+            updateDisplay();
+            d.classList.add('error');
+            setTimeout(() => d.classList.remove('error'), 600);
+        }
+
+        function showCorrectAnswer() {
+            const ans = state.currentTopic.id === 'factor'
+                ? state.currentTask.factors.join(' × ')
+                : String(state.currentTask.answer);
+
+            const d = document.getElementById('ui-answer');
+            d.classList.remove('error');
+            d.classList.add('correct');
+            d.innerText = 'Правильный ответ: ' + ans;
+            document.getElementById('ui-retry').innerText = 'Разбери пример, потом идём дальше';
+            Logger.send('answer_revealed', { topic: state.currentTopic.id, task: state.currentTask.text });
+
+            state.locked = true;
+            const btn = document.getElementById('btn-next');
+            btn.style.display = 'block';
+
+            let left = 7;
+            btn.textContent = 'Дальше (' + left + ')';
+            clearInterval(revealTimer);
+            revealTimer = setInterval(() => {
+                left--;
+                if (left <= 0) { nextAfterReveal(); return; }
+                btn.textContent = 'Дальше (' + left + ')';
+            }, 1000);
+        }
+
+        function nextAfterReveal() {
+            clearReveal();
+            if (state.hearts <= 0) endSession('silver'); else nextTask();
         }
 
         function updateHearts() { document.getElementById('ui-hearts').innerText = '❤️'.repeat(state.hearts) + '🖤'.repeat(3 - Math.max(0, state.hearts)); }
@@ -595,6 +658,7 @@
 
         function endSession(medal) {
             stopTimer();
+            clearReveal();
             Logger.send('session_end', { topic: state.currentTopic.id, medal, score: state.score });
             showScreen('result-screen');
             document.getElementById('ui-medal').innerText = medal === 'gold' ? '🥇' : '🥈';
