@@ -229,7 +229,10 @@ function checkAnswer() {
             fetch(`/api/student-progress/${state.studentId}`).then(res => res.json()).then(data => {
                 document.getElementById('ui-streak').innerText = data.streak;
                 state.achievements = data.achievements;
-                
+                ['factor', 'nod', 'nok'].forEach(topic => {
+                const badge = document.getElementById(`streak-${topic}`);
+                if (badge) badge.innerText = `🔥 ${data.topicStreaks[topic] || 0}`;
+                });
                 document.querySelectorAll('.topic-done').forEach(el => el.remove());
                 data.todayTopics.forEach(t => {
                     const node = document.getElementById('node-' + t.topic);
