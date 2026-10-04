@@ -130,6 +130,14 @@
         </div>
     </div>
 
+    <div id="result-screen" class="screen">
+        <div id="ui-medal" style="font-size:5rem; margin-top:40px;">🥇</div>
+        <div id="ui-result-title" style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;"></div>
+        <div id="ui-result-score" style="color:var(--muted); margin-bottom:30px;"></div>
+        <button class="btn" onclick="selectTopic(state.currentTopic.id)">🔁 Ещё раз</button>
+        <button class="btn" style="margin-top:10px; background:#95a5a6;" onclick="backToMap()">🏠 На карту</button>
+    </div>
+
     <div id="generic-modal" class="modal-overlay">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -328,6 +336,12 @@ function stopTimer() {
             showScreen('map-screen');
         }
 
+        function backToMap() {
+            stopTimer();
+            loadProgress();
+            showScreen('map-screen');
+        }
+
         function nextTask() {
             state.currentInput = ''; state.currentFactors = []; state.startTime = Date.now();
             updateDisplay();
@@ -413,6 +427,7 @@ function stopTimer() {
             showScreen('result-screen');
             document.getElementById('ui-medal').innerText = medal === 'gold' ? '🥇' : '🥈';
             document.getElementById('ui-result-title').innerText = medal === 'gold' ? 'Победа!' : 'Тренировка окончена';
+            document.getElementById('ui-result-score').innerText = `Правильных ответов: ${state.score}/5`;
 
             fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
