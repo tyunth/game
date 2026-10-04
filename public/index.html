@@ -5,84 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Математика 5 класс</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f4f7f9; --text: #333; --danger: #e74c3c; --success: #2ecc71; }
+        :root { --primary: #4a90e2; --bg: #f4f7f9; --text: #333; --danger: #e74c3c; --success: #2ecc71; --muted: #95a5a6; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .screen { display: none; flex-direction: column; flex: 1; padding: 20px; align-items: center; justify-content: center; text-align: center; }
+        .screen { display: none; flex-direction: column; flex: 1; padding: 20px; align-items: center; justify-content: flex-start; text-align: center; }
         .screen.active { display: flex; }
-        select { width: 100%; max-width: 300px; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 20px; }
+        
+        select { width: 100%; max-width: 300px; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 20px; outline: none; }
         button.btn { background: var(--primary); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
-        button.btn.secondary { background: #95a5a6; margin-top: 10px; }
         
-        /* Прогресс на карте */
-        .stats-bar { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; width: 100%; max-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        /* Верхний бар навигации (для выхода и общей статы) */
+        .top-nav { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; }
+        .btn-exit { background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 5px; opacity: 0.7; }
+        .btn-exit:active { opacity: 1; }
+
+        /* Карта тем */
+        .map-container { display: flex; flex-direction: column; align-items: center; width: 100%; gap: 30px; margin-top: 20px; padding-bottom: 30px; overflow-y: auto;}
+        .map-level { display: flex; justify-content: center; gap: 40px; position: relative; }
+        .topic-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; }
         
-        .map-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
-        .map-level { display: flex; justify-content: center; position: relative; z-index: 2; margin-bottom: 40px;}
-        .map-level.row { gap: 60px; margin-bottom: 0;}
         .topic-node { position: relative; width: 90px; height: 90px; border-radius: 50%; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; border: 4px solid #357abd; box-shadow: 0 6px 0 #357abd; }
-        .topic-done { position: absolute; top: -5px; right: -10px; background: white; border-radius: 50%; font-size: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+        .topic-node:active:not(.locked) { transform: translateY(6px); box-shadow: 0 0 0 #357abd; }
+        .topic-node.locked { background: #cbd5e1; border-color: #94a3b8; box-shadow: 0 6px 0 #94a3b8; cursor: not-allowed; color: #64748b; }
+        
+        .topic-streak-badge { font-size: 0.9rem; font-weight: bold; color: #d35400; background: #fff; padding: 2px 8px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .topic-done { position: absolute; top: -5px; right: -10px; background: white; border-radius: 50%; font-size: 1.3rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
 
-        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; font-size: 1.5rem; margin-bottom: 20px; }
-        .tools { display: flex; gap: 8px; }
-        .btn-tool { background: #f1c40f; color: #fff; border: none; border-radius: 50%; width: 42px; height: 42px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        /* Игровой экран */
+        .game-header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; margin-bottom: 20px; }
+        .timer { color: var(--muted); font-family: monospace; font-size: 1.2rem; display: flex; align-items: center; gap: 5px; }
+        .tools { display: flex; gap: 10px; }
+        .btn-tool { background: #f1c40f; color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2rem; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .btn-tool.theory { background: #3498db; }
-        .btn-tool.exit { background: var(--danger); font-size: 1rem; }
 
-        .task-container { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 400px; margin-bottom: auto; }
+        .task-container { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 400px; margin-bottom: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .answer-display { font-size: 2.5rem; min-height: 60px; border-bottom: 3px solid var(--primary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .answer-display.error { color: var(--danger); border-color: var(--danger); }
 
         .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; padding-bottom: 20px; }
         .numpad button { background: white; border: none; padding: 15px 0; font-size: 1.5rem; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* Увеличенная клавиатура множителей */
         .numpad.primes { grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .numpad.primes button { padding: 10px 0; font-size: 1.2rem; }
-        
+
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: left; max-height: 80vh; overflow-y: auto; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: left; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen" class="screen active">
-        <h1>Математика</h1>
-        <select id="class-select" onchange="filterStudents()">
-            <option value="" disabled selected>Выбери свой класс</option>
-        </select>
-        <select id="student-select" disabled>
-            <option value="" disabled selected>Сначала выбери класс</option>
-        </select>
+<div id="login-screen" class="screen active">
+        <h1 style="margin-top: 50px;">Математика</h1>
+        <select id="class-select" onchange="filterStudents()"><option value="" disabled selected>Класс</option></select>
+        <select id="student-select" disabled><option value="" disabled selected>Ученик</option></select>
         <button class="btn" onclick="login()">Войти</button>
     </div>
 
     <div id="map-screen" class="screen">
-        <div class="stats-bar">
-            <div>🔥 Стрик: <b id="ui-streak">0</b></div>
-            <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1rem; cursor:pointer;" onclick="showAchievements()">🏆 Ачивки</button>
+        <div class="top-nav">
+            <button class="btn-exit" onclick="logout()">🚪</button>
+            <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆 Награды</button>
         </div>
         
         <div class="map-container">
             <div class="map-level">
-                <div class="topic-node" id="node-factor" onclick="selectTopic('factor')">Множители</div>
+                <div class="topic-wrapper">
+                    <div class="topic-node" id="node-factor" onclick="selectTopic('factor')">Множители</div>
+                    <div class="topic-streak-badge" id="streak-factor">🔥 0</div>
+                </div>
             </div>
-            <div class="map-level row">
-                <div class="topic-node" id="node-nod" onclick="selectTopic('nod')">НОД</div>
-                <div class="topic-node" id="node-nok" onclick="selectTopic('nok')">НОК</div>
+            <div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node" id="node-nod" onclick="selectTopic('nod')">НОД</div>
+                    <div class="topic-streak-badge" id="streak-nod">🔥 0</div>
+                </div>
+                <div class="topic-wrapper">
+                    <div class="topic-node" id="node-nok" onclick="selectTopic('nok')">НОК</div>
+                    <div class="topic-streak-badge" id="streak-nok">🔥 0</div>
+                </div>
+            </div>
+            <div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node locked">Дроби <div style="font-size: 1.5rem; margin-top: 5px;">🔒</div></div>
+                    <div class="topic-streak-badge" style="color: var(--muted);">В разработке</div>
+                </div>
             </div>
         </div>
-        <button class="btn secondary" onclick="logout()">Сменить ученика</button>
     </div>
 
     <div id="game-screen" class="screen">
-        <div class="header">
+        <div class="top-nav">
+            <button class="btn-exit" onclick="exitLevel()">🚪</button>
+            <div class="timer" id="ui-timer">⏱ 00:00</div>
+        </div>
+
+        <div class="game-header">
             <div id="ui-hearts" style="color: var(--danger);">❤️❤️❤️</div>
             <div class="tools">
                 <button class="btn-tool theory" onclick="showTheoryModal()">📖</button>
                 <button class="btn-tool" onclick="showHint()">💡</button>
-                <button class="btn-tool exit" onclick="exitLevel()">🚪</button>
             </div>
             <div id="ui-score" style="color: var(--primary); font-weight: bold;">0/5</div>
         </div>
@@ -99,28 +120,12 @@
             <button style="background: #f0f0f0;" onclick="clearAnswer()">C</button><button onclick="appendNum(0)">0</button><button style="background: var(--success); color: white;" onclick="checkAnswer()">Ввод</button>
         </div>
 
-        <!-- Клавиатура до 47 -->
         <div id="keyboard-prime" class="numpad primes" style="display: none;">
             <button onclick="appendFactor(2)">2</button><button onclick="appendFactor(3)">3</button><button onclick="appendFactor(5)">5</button><button onclick="appendFactor(7)">7</button>
             <button onclick="appendFactor(11)">11</button><button onclick="appendFactor(13)">13</button><button onclick="appendFactor(17)">17</button><button onclick="appendFactor(19)">19</button>
             <button onclick="appendFactor(23)">23</button><button onclick="appendFactor(29)">29</button><button onclick="appendFactor(31)">31</button><button onclick="appendFactor(37)">37</button>
             <button onclick="appendFactor(41)">41</button><button onclick="appendFactor(43)">43</button><button onclick="appendFactor(47)">47</button><button style="background: #f0f0f0;" onclick="clearAnswer()">C</button>
             <button style="grid-column: span 4; background: var(--success); color: white;" onclick="checkFactorAnswer()">Готово</button>
-        </div>
-    </div>
-
-    <div id="result-screen" class="screen">
-        <div style="font-size: 5rem; margin-bottom: 10px;" id="ui-medal">🥇</div>
-        <h1 id="ui-result-title"></h1>
-        <p id="ui-result-desc"></p>
-        <button class="btn" onclick="showScreen('map-screen'); loadProgress();">Вернуться на карту</button>
-    </div>
-
-    <div class="modal-overlay" id="generic-modal">
-        <div class="modal-content">
-            <h3 id="modal-title" style="margin-top: 0; color: var(--primary);"></h3>
-            <div id="modal-text" style="margin-bottom: 20px; line-height: 1.5;"></div>
-            <button class="btn" style="width: 100%;" onclick="closeModal()">Понятно</button>
         </div>
     </div>
 
@@ -136,6 +141,48 @@
                 fetch('/api/log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({studentId: state.studentId, action, details})});
             }
         };
+
+        // Переменные для таймера
+let timerInterval;
+let taskSeconds = 0;
+
+function formatTime(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `⏱ ${m}:${s}`;
+}
+
+function startTimer() {
+    clearInterval(timerInterval);
+    taskSeconds = 0;
+    document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
+    timerInterval = setInterval(() => {
+        taskSeconds++;
+        document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+}
+
+// В функции nextTask() добавляем запуск таймера:
+function nextTask() {
+    state.currentInput = ''; state.currentFactors = [];
+    updateDisplay();
+    state.currentTask = state.currentTopic.generate();
+    document.getElementById('ui-task').innerText = state.currentTask.text;
+    startTimer(); // <- запуск секундомера
+}
+
+// При проверке ответа (checkAnswer / checkFactorAnswer) передаем taskSeconds:
+function checkAnswer() {
+    if (!state.currentInput) return;
+    stopTimer();
+    const isCorrect = parseInt(state.currentInput) === state.currentTask.answer;
+    Logger.send('answer_submit', { topic: state.currentTopic.id, correct: isCorrect, input: state.currentInput, timeSec: taskSeconds });
+    handleResult(isCorrect);
+}
 
         window.onload = () => {
             fetch('/api/students').then(res => res.json()).then(data => {
