@@ -40,6 +40,14 @@ db.serialize(() => {
         details TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+    db.run(`CREATE TABLE IF NOT EXISTS topic_progress (
+        student_id TEXT,
+        topic_id TEXT,
+        streak INTEGER DEFAULT 0,
+        last_played_date TEXT,
+        PRIMARY KEY (student_id, topic_id)
+    )`);
+    
 });
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -60,14 +68,21 @@ app.get('/api/student-progress/:id', (req, res) => {
     const studentId = req.params.id;
     const today = getTodayDate();
 
-    db.get("SELECT streak, achievements FROM students WHERE id = ?", [studentId], (err, student) => {
+    db.get("SELECT achievements FROM students WHERE id = ?", [studentId], (err, student) => {
         if (err || !student) return res.status(404).json({ error: 'Ученик не найден' });
 
         db.all("SELECT topic_id, medal FROM sessions WHERE student_id = ? AND date = ?", [studentId, today], (err, sessions) => {
-            res.json({
-                streak: student.streak,
-                achievements: JSON.parse(student.achievements || '[]'),
-                todayTopics: sessions.map(s => ({ topic: s.topic_id, medal: s.medal }))
+            db.all("SELECT topic_id, streak FROM topic_progress WHERE student_id = ?", [studentId], (err, topicStreaks) => {
+                
+                // Формируем объект вида { factor: 2, nod: 0, nok: 5 }
+                const streaksDict = {};
+                topicStreaks.forEach(ts => streaksDict[ts.topic_id] = ts.streak);
+
+                res.json({
+                    achievements: JSON.parse(student.achievements || '[]'),
+                    todayTopics: sessions.map(s => ({ topic: s.topic_id, medal: s.medal })),
+                    topicStreaks: streaksDict
+                });
             });
         });
     });
@@ -173,9 +188,22 @@ app.get('/admin', adminAuth, (req, res) => {
 
 app.get('/admin/logs/:studentId', adminAuth, (req, res) => {
     db.all("SELECT * FROM logs WHERE student_id = ? ORDER BY created_at DESC LIMIT 50", [req.params.studentId], (err, rows) => {
-        let html = `<meta charset="UTF-8"><style>body{font-family:sans-serif;}</style><h2>Последние 50 действий (Ученик: ${req.params.studentId})</h2><a href="/admin">← Назад</a><br><br><table border="1" cellpadding="8" style="border-collapse:collapse; width:100%;"><tr><th>Время</th><th>Действие</th><th>Детали</th></tr>`;
+        let html = `<meta charset="UTF-8"><style>body{font-family:sans-serif;} .cheat{background:#fee2e2;}</style><h2>Логи (Ученик: ${req.params.studentId})</h2><a href="/admin">← Назад</a><br><br><table border="1" cellpadding="8" style="border-collapse:collapse; width:100%;"><tr><th>Время</th><th>Действие</th><th>Время решения</th><th>Ввод</th></tr>`;
+        
         rows.forEach(r => {
-            html += `<tr><td>${new Date(r.created_at).toLocaleString('ru-RU')}</td><td>${r.action}</td><td>${r.details}</td></tr>`;
+            let details = {};
+            try { details = JSON.parse(r.details); } catch(e){}
+            
+            // Если ответил правильно быстрее 3 секунд
+            const isSuspicious = (r.action === 'answer_submit' && details.correct && details.timeSec < 3);
+            const trClass = isSuspicious ? 'class="cheat"' : '';
+            
+            html += `<tr ${trClass}>
+                <td>${new Date(r.created_at).toLocaleTimeString('ru-RU')}</td>
+                <td>${r.action} ${details.correct ? '✅' : (details.correct === false ? '❌' : '')}</td>
+                <td>${details.timeSec !== undefined ? details.timeSec + ' сек' : '-'} ${isSuspicious ? '🚩' : ''}</td>
+                <td>${details.input || '-'}</td>
+            </tr>`;
         });
         res.send(html + `</table>`);
     });
