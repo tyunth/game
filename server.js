@@ -161,8 +161,22 @@ app.post('/admin/add-student', adminAuth, (req, res) => {
 });
 
 app.get('/admin', adminAuth, (req, res) => {
-    const query = `
-        SELECT s.id, s.name, s.class_name, s.streak, s.last_played_date, 
+    const today = getTodayDate();
+    const nowDate = new Date();
+    const dow = (nowDate.getDay() + 6) % 7; // 0 = понедельник
+    const monday = new Date(nowDate);
+    monday.setDate(monday.getDate() - dow);
+    const mondayStr = monday.toISOString().split('T')[0];
+
+    const weekDays = [];
+    for (let i = 0; i < 5; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        weekDays.push(d.toISOString().split('T')[0]);
+    }
+
+    const mainQuery = `
+        SELECT s.id, s.name, s.class_name, s.streak, s.last_played_date,
             COUNT(sess.id) as total_games,
             SUM(CASE WHEN sess.medal = 'gold' THEN 1 ELSE 0 END) as total_gold
         FROM students s
@@ -170,31 +184,103 @@ app.get('/admin', adminAuth, (req, res) => {
         GROUP BY s.id ORDER BY s.class_name, s.name
     `;
 
-    db.all(query, [], (err, rows) => {
-        let html = `
-            <meta charset="UTF-8">
-            <style>body{font-family:sans-serif; padding:20px;} table{border-collapse:collapse; width:100%;} th,td{border:1px solid #ddd; padding:8px; text-align:center;} th{background:#f4f7f9;} .form-box{background:#eee; padding:15px; margin-bottom:20px; border-radius:8px;}</style>
-            <h2>Панель учителя</h2>
-            <div class="form-box">
-                <form action="/admin/add-student" method="POST" style="display:flex; gap:10px;">
-                    <input type="text" name="student_id" placeholder="Логин (a1)" required>
-                    <input type="text" name="student_name" placeholder="Фамилия Имя" required>
-                    <select name="class_name">
-                        <option value="5 А">5 А</option>
-                        <option value="5 Б">5 Б</option>
-                        <option value="5 В">5 В</option>
+    db.all(mainQuery, [], (err, rows) => {
+        if (err) return res.status(500).send('Ошибка БД');
+
+        // Сессии за текущую неделю (Пн..сегодня)
+        db.all("SELECT student_id, date, medal FROM sessions WHERE date >= ? AND date <= ?",
+            [mondayStr, today], (err2, weekRows) => {
+
+            // student_id -> { date -> 'gold' | 'silver' } (gold приоритетнее)
+            const weekBest = {};
+            weekRows.forEach(r => {
+                const byDay = weekBest[r.student_id] || (weekBest[r.student_id] = {});
+                if (r.medal === 'gold') byDay[r.date] = 'gold';
+                else if (!byDay[r.date]) byDay[r.date] = 'silver';
+            });
+
+            const classes = [...new Set(rows.map(r => r.class_name).filter(Boolean))].sort();
+            const playedToday = rows.filter(r => weekBest[r.id] && weekBest[r.id][today]).length;
+            const totalStudents = rows.length;
+
+            const style = `<style>
+                body{font-family:sans-serif; padding:20px; color:#333;}
+                h2{margin-top:0;}
+                .dashboard{background:#eaf3ff; border:1px solid #cfe1ff; border-radius:10px; padding:14px 18px; margin-bottom:16px; font-size:1.1rem;}
+                .dashboard b{color:#2f6fed;}
+                .form-box{background:#eee; padding:15px; margin-bottom:16px; border-radius:8px;}
+                .controls{margin-bottom:12px;}
+                .controls select{padding:8px 12px; font-size:1rem; border-radius:8px; border:1px solid #ccc;}
+                table{border-collapse:collapse; width:100%; font-size:0.95rem;}
+                th,td{border:1px solid #ddd; padding:6px 8px; text-align:center;}
+                th{background:#f4f7f9; position:sticky; top:0;}
+                .week .day{font-size:1.05rem; margin:0 1px;}
+                .status{font-size:1.2rem;}
+            </style>`;
+
+            let html = `<meta charset="UTF-8">${style}
+                <h2>Панель учителя</h2>
+                <div class="dashboard">Сегодня сыграло: <b>${playedToday}</b> из <b>${totalStudents}</b> учеников</div>
+                <div class="form-box">
+                    <form action="/admin/add-student" method="POST" style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <input type="text" name="student_id" placeholder="Логин (a1)" required>
+                        <input type="text" name="student_name" placeholder="Фамилия Имя" required>
+                        <select name="class_name">
+                            <option value="5 А">5 А</option>
+                            <option value="5 Б">5 Б</option>
+                            <option value="5 В">5 В</option>
+                        </select>
+                        <button type="submit">+ Добавить ученика</button>
+                    </form>
+                </div>
+                <div class="controls">Класс:
+                    <select id="classFilter" onchange="filterTable()">
+                        <option value="">Все</option>
+                        ${classes.map(c => `<option value="${c}">${c}</option>`).join('')}
                     </select>
-                    <button type="submit">+ Добавить ученика</button>
-                </form>
-            </div>
-            <table>
-                <tr><th>Класс</th><th>Ученик</th><th>Стрик</th><th>Золото</th><th>Игр</th><th>Логи</th></tr>
-        `;
-        rows.forEach(r => {
-            html += `<tr><td>${r.class_name || '-'}</td><td style="text-align:left;">${r.name}</td><td>${r.streak}</td><td>${r.total_gold}</td><td>${r.total_games}</td>
-            <td><a href="/admin/logs/${r.id}">Смотреть</a></td></tr>`;
+                </div>
+                <table id="studentsTable">
+                    <thead><tr>
+                        <th>Статус сегодня</th><th>Класс</th><th>Ученик</th>
+                        <th>Прогресс за неделю</th><th>Стрик</th><th>Золото</th><th>Игр</th><th>Логи</th>
+                    </tr></thead>
+                    <tbody>`;
+            rows.forEach(r => {
+                const byDay = weekBest[r.id] || {};
+                const todayMedal = byDay[today];
+                const status = todayMedal === 'gold' ? '✅' : (todayMedal === 'silver' ? '☑️' : '❌');
+
+                const weekCell = weekDays.map(dateStr => {
+                    const m = byDay[dateStr];
+                    const icon = m === 'gold' ? '🥇' : (m === 'silver' ? '🥈' : '⬜');
+                    const label = dateStr.slice(8, 10) + '.' + dateStr.slice(5, 7);
+                    return `<span class="day" title="${label}">${icon}</span>`;
+                }).join('');
+
+                html += `<tr data-class="${r.class_name || ''}">
+                    <td class="status">${status}</td>
+                    <td>${r.class_name || '-'}</td>
+                    <td style="text-align:left;">${r.name}</td>
+                    <td class="week">${weekCell}</td>
+                    <td>${r.streak}</td>
+                    <td>${r.total_gold}</td>
+                    <td>${r.total_games}</td>
+                    <td><a href="/admin/logs/${r.id}">Смотреть</a></td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>
+                <script>
+                    function filterTable() {
+                        const v = document.getElementById('classFilter').value;
+                        document.querySelectorAll('#studentsTable tbody tr').forEach(tr => {
+                            tr.style.display = (!v || tr.getAttribute('data-class') === v) ? '' : 'none';
+                        });
+                    }
+                </script>`;
+
+            res.send(html);
         });
-        res.send(html + `</table>`);
     });
 });
 
