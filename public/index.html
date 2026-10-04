@@ -130,6 +130,16 @@
         </div>
     </div>
 
+    <div id="generic-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div id="modal-title" style="font-weight:bold; font-size:1.2rem;"></div>
+                <button class="btn-exit" onclick="closeModal()">✖</button>
+            </div>
+            <div id="modal-text"></div>
+        </div>
+    </div>
+
     <script>
         let allStudents = [];
         let state = { studentId: null, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
@@ -165,24 +175,6 @@ function startTimer() {
 
 function stopTimer() {
     clearInterval(timerInterval);
-}
-
-// В функции nextTask() добавляем запуск таймера:
-function nextTask() {
-    state.currentInput = ''; state.currentFactors = [];
-    updateDisplay();
-    state.currentTask = state.currentTopic.generate();
-    document.getElementById('ui-task').innerText = state.currentTask.text;
-    startTimer(); // <- запуск секундомера
-}
-
-// При проверке ответа (checkAnswer / checkFactorAnswer) передаем taskSeconds:
-function checkAnswer() {
-    if (!state.currentInput) return;
-    stopTimer();
-    const isCorrect = parseInt(state.currentInput) === state.currentTask.answer;
-    Logger.send('answer_submit', { topic: state.currentTopic.id, correct: isCorrect, input: state.currentInput, timeSec: taskSeconds });
-    handleResult(isCorrect);
 }
 
         window.onload = () => {
@@ -331,6 +323,7 @@ function checkAnswer() {
         }
 
         function exitLevel() {
+            stopTimer();
             Logger.send('exit_level', { topic: state.currentTopic.id, score: state.score });
             showScreen('map-screen');
         }
@@ -340,6 +333,7 @@ function checkAnswer() {
             updateDisplay();
             state.currentTask = state.currentTopic.generate();
             document.getElementById('ui-task').innerText = state.currentTask.text;
+            startTimer(); // <- запуск секундомера
         }
 
         function appendNum(num) { if (state.currentInput.length < 5) { state.currentInput += num; updateDisplay(); } }
@@ -354,6 +348,7 @@ function checkAnswer() {
 
         function checkAnswer() {
             if (!state.currentInput) return;
+            stopTimer();
             const timeTaken = Math.round((Date.now() - state.startTime)/1000);
             const isCorrect = parseInt(state.currentInput) === state.currentTask.answer;
             Logger.send('answer_submit', { topic: state.currentTopic.id, correct: isCorrect, input: state.currentInput, timeSec: timeTaken });
@@ -362,6 +357,7 @@ function checkAnswer() {
 
         function checkFactorAnswer() {
             if (!state.currentFactors.length) return;
+            stopTimer();
             const timeTaken = Math.round((Date.now() - state.startTime)/1000);
             const userAns = [...state.currentFactors].sort((a,b)=>a-b).join(',');
             const trueAns = [...state.currentTask.factors].sort((a,b)=>a-b).join(',');
