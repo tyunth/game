@@ -68,7 +68,7 @@ app.get('/api/student-progress/:id', (req, res) => {
     const studentId = req.params.id;
     const today = getTodayDate();
 
-    db.get("SELECT achievements FROM students WHERE id = ?", [studentId], (err, student) => {
+    db.get("SELECT achievements, streak FROM students WHERE id = ?", [studentId], (err, student) => {
         if (err || !student) return res.status(404).json({ error: 'Ученик не найден' });
 
         db.all("SELECT topic_id, medal FROM sessions WHERE student_id = ? AND date = ?", [studentId, today], (err, sessions) => {
@@ -79,6 +79,7 @@ app.get('/api/student-progress/:id', (req, res) => {
                 topicStreaks.forEach(ts => streaksDict[ts.topic_id] = ts.streak);
 
                 res.json({
+                    streak: student.streak || 0,
                     achievements: JSON.parse(student.achievements || '[]'),
                     todayTopics: sessions.map(s => ({ topic: s.topic_id, medal: s.medal })),
                     topicStreaks: streaksDict

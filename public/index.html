@@ -64,6 +64,7 @@
     <div id="map-screen" class="screen">
         <div class="top-nav">
             <button class="btn-exit" onclick="logout()">🚪</button>
+            <div id="ui-streak" style="font-weight:bold; color:#d35400; font-size:1.1rem;">🔥 0</div>
             <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆 Награды</button>
         </div>
         
@@ -227,7 +228,8 @@ function checkAnswer() {
 
         function loadProgress() {
             fetch(`/api/student-progress/${state.studentId}`).then(res => res.json()).then(data => {
-                document.getElementById('ui-streak').innerText = data.streak;
+                const streakEl = document.getElementById('ui-streak');
+                if (streakEl) streakEl.innerText = `🔥 ${data.streak ?? 0}`;
                 state.achievements = data.achievements;
                 ['factor', 'nod', 'nok'].forEach(topic => {
                 const badge = document.getElementById(`streak-${topic}`);
