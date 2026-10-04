@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Математика 5 класс</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
     <style>
         :root { --primary: #4a90e2; --bg: #f4f7f9; --text: #333; --danger: #e74c3c; --success: #2ecc71; --muted: #95a5a6; }
         * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .screen { display: none; flex-direction: column; flex: 1; padding: 20px; align-items: center; justify-content: flex-start; text-align: center; }
+        body { margin: 0; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+        .screen { display: none; flex-direction: column; flex: 1; min-height: 0; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); align-items: center; justify-content: flex-start; text-align: center; overflow-y: auto; }
         .screen.active { display: flex; }
         
         select { width: 100%; max-width: 300px; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 20px; outline: none; }
@@ -49,7 +49,7 @@
         .answer-display { font-size: 2.5rem; min-height: 60px; border-bottom: 3px solid var(--primary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .answer-display.error { color: var(--danger); border-color: var(--danger); }
 
-        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; padding-bottom: 20px; }
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
         .numpad button { background: white; border: none; padding: 15px 0; font-size: 1.5rem; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .numpad.primes { grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .numpad.primes button { padding: 10px 0; font-size: 1.2rem; }
@@ -70,7 +70,7 @@
 
     <div id="map-screen" class="screen">
         <div class="top-nav">
-            <button class="btn-exit" onclick="logout()">🚪</button>
+            <button class="btn-exit" onclick="logout()">↩️</button>
             <div id="ui-streak" style="font-weight:bold; color:#d35400; font-size:1.1rem;">🔥 0</div>
             <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆 Награды</button>
         </div>
@@ -103,7 +103,7 @@
 
     <div id="game-screen" class="screen">
         <div class="top-nav">
-            <button class="btn-exit" onclick="goToMap(true)">🚪</button>
+            <button class="btn-exit" onclick="goToMap(true)">↩️</button>
             <div class="timer" id="ui-timer">⏱ 00:00</div>
         </div>
 
@@ -114,7 +114,7 @@
                 <button class="btn-tool" onclick="showHint()">💡</button>
                 <button class="btn-tool" onclick="showPrimesTable()" title="Таблица простых чисел">🔢</button>
                 <button class="btn-tool" onclick="showMultTable()" title="Таблица умножения">✖️</button>
-                <button class="btn-tool" onclick="openCalculator()" title="Калькулятор">🖩</button>
+                <button class="btn-tool" onclick="openCalculator()" title="Калькулятор">🧮</button>
             </div>
             <div id="ui-score" style="color: var(--primary); font-weight: bold;">0/5</div>
         </div>
@@ -436,7 +436,7 @@
             const firstTime = !localStorage.getItem('calcTried');
             if (firstTime) localStorage.setItem('calcTried', '1');
             Logger.send('open_calculator', { topic: state.currentTopic.id, firstTime });
-            openGenericModal('🖩 Калькулятор',
+            openGenericModal('🧮 Калькулятор',
                 '<div style="text-align:center; color:var(--danger); font-weight:bold; font-size:1.4rem; margin:10px 0;">ЗАПРЕЩЕНКА! </div>' +
                 '<div style="text-align:center;">Калькулятором пользоваться нельзя </div>');
         }
