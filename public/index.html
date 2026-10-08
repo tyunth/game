@@ -381,7 +381,7 @@
                 <span class="team-bar"><i style="width:${pct}%"></i></span>
                 <span class="team-points" style="width: auto; margin-left: 8px;">${t.points} <small>очк.</small></span>
             </div>
-            <div class="team-note">в зачёте: ${t.scored} из ${t.students}</div>`;
+            <div class="team-note">играли на этой неделе: ${t.scored} из ${t.students}</div>`;
             }).join('') || '<div class="team-note">Пока нет данных</div>';
             }).catch(() => {});
         }
