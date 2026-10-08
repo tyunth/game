@@ -170,6 +170,7 @@ app.get('/api/students', (req, res) => {
 
 // Командный зачёт классов: +1 очко за золото (не чаще 1 раза в день по каждой теме).
 // В зачёт идут только ученики, отыгравшие за неделю не меньше MIN_DAYS_FOR_SCORE дней.
+// Командный зачёт классов
 app.get('/api/team-standings', (req, res) => {
     const { mondayStr, today } = getWeekInfo();
 
@@ -210,7 +211,8 @@ app.get('/api/team-standings', (req, res) => {
         classSizes.forEach(r => { ensure(r.class_name).students = r.students; });
         perStudent.forEach(r => {
             const t = ensure(r.class_name);
-            if ((r.active_days || 0) >= MIN_DAYS_FOR_SCORE) {
+            // Если ученик заработал золото или просто заходил, он считается активным
+            if ((r.golds || 0) > 0 || (r.active_days || 0) > 0) {
                 t.points += r.golds || 0;
                 t.scored += 1;
             }
@@ -220,11 +222,10 @@ app.get('/api/team-standings', (req, res) => {
             class_name: t.class_name,
             students: t.students,
             points: t.points,
-            scored: t.scored,
-            max: t.students * TOPICS_COUNT * MIN_DAYS_FOR_SCORE
+            scored: t.scored
         })).sort((a, b) => b.points - a.points || a.class_name.localeCompare(b.class_name));
 
-        res.json({ weekStart: mondayStr, today, minDays: MIN_DAYS_FOR_SCORE, teams });
+        res.json({ weekStart: mondayStr, today, teams });
     });
 });
 
