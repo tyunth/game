@@ -528,8 +528,9 @@ app.post('/admin/class/add', adminAuth, (req, res) => {
 app.get('/admin', adminAuth, (req, res) => {
     const { monday, mondayStr, today } = getWeekInfo();
 
+    // Собираем все 7 дней недели
     const weekDays = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
         weekDays.push(d.toISOString().split('T')[0]);
@@ -541,7 +542,7 @@ app.get('/admin', adminAuth, (req, res) => {
             SUM(CASE WHEN sess.medal = 'gold' THEN 1 ELSE 0 END) as total_gold
         FROM students s
         LEFT JOIN sessions sess ON s.id = sess.student_id
-        GROUP BY s.id ORDER BY s.class_name, s.id
+        GROUP BY s.id ORDER BY s.class_name, s.name
     `;
 
     db.all(mainQuery, [], (err, rows) => {
@@ -550,103 +551,128 @@ app.get('/admin', adminAuth, (req, res) => {
         let weekRows = [];
         let classRows = [];
         let deviceMap = { byDevice: {}, byStudent: {}, overlaps: [] };
+        
         runAsync([
-            next => db.all("SELECT student_id, date, medal FROM sessions WHERE date >= ? AND date <= ?",
+            // ВАЖНО: Добавили topic_id в выборку
+            next => db.all("SELECT student_id, date, topic_id, medal FROM sessions WHERE date >= ? AND date <= ?",
                 [mondayStr, today], (e, r) => { weekRows = r || []; next(); }),
             next => db.all("SELECT name, is_test FROM classes ORDER BY name", [], (e, r) => { classRows = r || []; next(); }),
             next => getDeviceSignals(today, m => { deviceMap = m; next(); })
         ], () => {
 
-            // student_id -> { date -> 'gold' | 'silver' } (gold приоритетнее)
-            const weekBest = {};
+            // Аггрегируем медали: student_id -> { date -> { topic_id -> 'gold'|'silver' } }
+            const weekStats = {};
             weekRows.forEach(r => {
-                const byDay = weekBest[r.student_id] || (weekBest[r.student_id] = {});
-                if (r.medal === 'gold') byDay[r.date] = 'gold';
-                else if (!byDay[r.date]) byDay[r.date] = 'silver';
+                const studentStats = weekStats[r.student_id] || (weekStats[r.student_id] = {});
+                const byDay = studentStats[r.date] || (studentStats[r.date] = {});
+                
+                // Если по теме еще нет медали за день или получено золото - сохраняем
+                if (!byDay[r.topic_id] || r.medal === 'gold') {
+                    byDay[r.topic_id] = r.medal;
+                }
             });
 
             const testClasses = new Set(classRows.filter(c => c.is_test).map(c => c.name));
             const isTestStudent = r => !!r.is_test || testClasses.has(r.class_name);
-
             const classes = [...new Set(rows.map(r => r.class_name).filter(Boolean))].sort();
+            
             const rated = rows.filter(r => !isTestStudent(r));
-            const playedToday = rated.filter(r => weekBest[r.id] && weekBest[r.id][today]).length;
+            const playedToday = rated.filter(r => weekStats[r.id] && weekStats[r.id][today]).length;
             const totalStudents = rated.length;
-            const classNames = classRows.length ? classRows.map(c => c.name) : classes;
-            const classOptions = classNames.map(c => `<option value="${c}">${c}</option>`).join('');
+            const classOptions = classRows.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
+            const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК' };
 
             const style = `<style>
-                body{font-family:sans-serif; padding:20px; color:#333;}
+                body{font-family:sans-serif; padding:20px; color:#333; background:#f9fbfc;}
                 h2{margin-top:0;}
                 .dashboard{background:#eaf3ff; border:1px solid #cfe1ff; border-radius:10px; padding:14px 18px; margin-bottom:16px; font-size:1.1rem;}
                 .dashboard b{color:#2f6fed;}
-                .form-box{background:#eee; padding:15px; margin-bottom:16px; border-radius:8px;}
-                .controls{margin-bottom:12px;}
-                .controls select{padding:8px 12px; font-size:1rem; border-radius:8px; border:1px solid #ccc;}
-                table{border-collapse:collapse; width:100%; font-size:0.95rem;}
-                th,td{border:1px solid #ddd; padding:6px 8px; text-align:center;}
-                th{background:#f4f7f9; position:sticky; top:0;}
-                .week .day{font-size:1.05rem; margin:0 1px;}
+                .form-box{background:#fff; padding:15px; margin-bottom:16px; border-radius:8px; border:1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
+                .controls{margin-bottom:12px; display:flex; gap:15px; align-items:center;}
+                input[type="text"], select{padding:8px 12px; font-size:1rem; border-radius:8px; border:1px solid #ccc; outline:none;}
+                table{border-collapse:collapse; width:100%; font-size:0.95rem; background:#fff;}
+                th,td{border:1px solid #e2e8f0; padding:8px; text-align:center;}
+                th{background:#f4f7f9; position:sticky; top:0; z-index:10; cursor:pointer;}
+                th:hover{background:#e2e8f0;}
                 .status{font-size:1.2rem;}
+                details summary{cursor:pointer; color:#2f6fed; font-weight:bold; outline:none;}
+                details summary::-webkit-details-marker {display:none;}
+                .day-details {text-align:left; font-size:0.85rem; margin-top:6px; background:#f8fafc; padding:6px; border-radius:6px; border:1px solid #e2e8f0;}
             </style>`;
 
             let html = `<meta charset="UTF-8">${style}
                 <h2>Панель учителя</h2>
-                <div class="controls"><a href="/admin/devices">📱 Устройства и подозрения</a></div>
-                <div class="dashboard">Сегодня сыграло: <b>${playedToday}</b> из <b>${totalStudents}</b> учеников</div>
+                <div style="margin-bottom:16px;"><a href="/admin/devices" style="text-decoration:none; background:#eee; padding:8px 12px; border-radius:8px; color:#333;">📱 Устройства и подозрения</a></div>
+                <div class="dashboard">Сегодня сыграло: <b>${playedToday}</b> из <b>${totalStudents}</b> учеников (не считая тестовых)</div>
+                
                 <div class="form-box">
                     <div style="font-weight:bold; margin-bottom:8px;">Добавить учеников</div>
                     <form action="/admin/add-student" method="POST" id="addForm">
                         <div id="addRows"></div>
                         <input type="hidden" name="payload" id="addPayload">
                         <div style="display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;">
-                            <button type="button" onclick="addRow()">+ Добавить ещё</button>
-                            <button type="submit">Сохранить всё</button>
+                            <button type="button" onclick="addRow()" style="padding:6px 12px;">+ Добавить ещё</button>
+                            <button type="submit" style="padding:6px 12px; background:#2f6fed; color:white; border:none; border-radius:4px;">Сохранить всё</button>
                         </div>
                     </form>
                 </div>
-                <div class="form-box">
-                    <div style="font-weight:bold; margin-bottom:8px;">Классы</div>
-                    <div id="classList" style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
-                        ${classRows.map(c => `
-                            <form action="/admin/class/toggle" method="POST" style="display:flex; gap:4px; align-items:center;">
-                                <input type="hidden" name="class_name" value="${c.name}">
-                                <input type="hidden" name="is_test" value="${c.is_test ? '0' : '1'}">
-                                <span>${c.name}</span>
-                                <button type="submit">${c.is_test ? '🧪 тест' : 'обычный'}</button>
-                            </form>`).join('') || '<i>Классов пока нет</i>'}
-                    </div>
-                    <form action="/admin/class/add" method="POST" style="display:flex; gap:8px;">
-                        <input type="text" name="class_name" placeholder="Название класса" required>
-                        <button type="submit">+ Класс</button>
-                    </form>
-                </div>
-                <div class="controls">Класс:
+                
+                <div class="controls">
                     <select id="classFilter" onchange="filterTable()">
-                        <option value="">Все</option>
+                        <option value="">Все классы</option>
                         ${classes.map(c => `<option value="${c}">${c}</option>`).join('')}
                     </select>
+                    <input type="text" id="searchInput" placeholder="Поиск по имени..." onkeyup="filterTable()" style="flex:1; max-width:300px;">
                 </div>
-                <table id="studentsTable">
+                
+                <table id="studentsTable" data-dir="desc">
                     <thead><tr>
-                        <th>Статус сегодня</th><th>Класс</th><th>Ученик</th>
-                        <th>Прогресс за неделю</th><th>Стрик</th><th>Золото</th><th>Игр</th><th>Устройство</th><th>Логи</th>
+                        <th>Статус сегодня</th>
+                        <th onclick="sortTable(1, false)">Класс ↕</th>
+                        <th onclick="sortTable(2, false)" style="text-align:left;">Ученик ↕</th>
+                        <th>Прогресс за неделю</th>
+                        <th onclick="sortTable(4, true)" title="Дней подряд">Стрик ↕</th>
+                        <th onclick="sortTable(5, true)" title="Всего золота за все время">Золото (Всё) ↕</th>
+                        <th onclick="sortTable(6, true)">Сыграно игр ↕</th>
+                        <th>Устройство</th>
+                        <th>Управление</th>
                     </tr></thead>
                     <tbody>`;
+            
             rows.forEach(r => {
-                const byDay = weekBest[r.id] || {};
-                const todayMedal = byDay[today];
-                const status = todayMedal === 'gold' ? '✅' : (todayMedal === 'silver' ? '☑️' : '❌');
+                const byDay = weekStats[r.id] || {};
+                
+                // Статус за сегодня
+                const todayMedals = Object.values(byDay[today] || {});
+                const status = todayMedals.includes('gold') ? '✅' : (todayMedals.includes('silver') ? '☑️' : '❌');
 
-                const weekCell = weekDays.map(dateStr => {
-                    const m = byDay[dateStr];
-                    const icon = m === 'gold' ? '🥇' : (m === 'silver' ? '🥈' : '⬜');
-                    const label = dateStr.slice(8, 10) + '.' + dateStr.slice(5, 7);
-                    return `<span class="day" title="${label}">${icon}</span>`;
-                }).join('');
+                // Формируем сворачиваемый блок "Прогресс за неделю"
+                let weekHtml = '';
+                let uniqueGoldsWeek = 0; // Золото за неделю (пошло в командный зачет)
+
+                weekDays.forEach(dateStr => {
+                    const dayData = byDay[dateStr];
+                    if (dayData) {
+                        let dayItems = [];
+                        for (const [topic, medal] of Object.entries(dayData)) {
+                            if (medal === 'gold') uniqueGoldsWeek++;
+                            dayItems.push(`${medal === 'gold' ? '🥇' : '🥈'} ${topicNames[topic] || topic}`);
+                        }
+                        const fmtDate = dateStr.slice(8, 10) + '.' + dateStr.slice(5, 7);
+                        weekHtml += `<div style="margin-bottom:4px;"><b>${fmtDate}:</b> ${dayItems.join(', ')}</div>`;
+                    }
+                });
+
+                // HTML ячейки недели
+                const weekCell = weekHtml
+                    ? `<details>
+                         <summary>В зачёт: ${uniqueGoldsWeek} 🥇</summary>
+                         <div class="day-details">${weekHtml}</div>
+                       </details>`
+                    : `<span style="color:#aaa; font-size:0.85rem;">Нет активности</span>`;
 
                 const test = isTestStudent(r);
-
                 const devHash = deviceMap.byStudent[r.id];
                 const devInfo = devHash ? deviceMap.byDevice[devHash] : null;
                 const suspicious = !!devInfo && (devInfo.count >= DEVICE_ALERT_THRESHOLD || devInfo.overlap);
@@ -658,16 +684,16 @@ app.get('/admin', adminAuth, (req, res) => {
                     <td class="status">${status}</td>
                     <td>${r.class_name || '-'}${test ? ' 🧪' : ''}</td>
                     <td style="text-align:left;">${r.name}</td>
-                    <td class="week">${weekCell}</td>
+                    <td>${weekCell}</td>
                     <td>${r.streak}</td>
                     <td>${r.total_gold}</td>
                     <td>${r.total_games}</td>
                     <td>${devCell}</td>
-                    <td style="white-space:nowrap;">
-                        <a href="/admin/logs/${r.id}">Логи</a> ·
-                        <a href="/admin/edit/${r.id}">Изменить</a> ·
-                        <form action="/admin/delete/${r.id}" method="POST" style="display:inline;" onsubmit="return confirm('Удалить ученика ${r.id}? Его сессии и логи тоже будут удалены.');">
-                            <button type="submit" style="padding:2px 8px; cursor:pointer;">Удалить</button>
+                    <td style="white-space:nowrap; font-size:0.85rem;">
+                        <a href="/admin/logs/${r.id}">Логи</a> <br>
+                        <a href="/admin/edit/${r.id}">Изменить</a> <br>
+                        <form action="/admin/delete/${r.id}" method="POST" style="margin-top:4px;" onsubmit="return confirm('Удалить ученика ${r.name}?');">
+                            <button type="submit" style="padding:2px 8px; cursor:pointer; color:red; border:1px solid red; background:none; border-radius:4px;">Удалить</button>
                         </form>
                     </td>
                 </tr>`;
@@ -684,7 +710,7 @@ app.get('/admin', adminAuth, (req, res) => {
                         row.innerHTML = '<input type="text" placeholder="Логин (a1)">'
                             + ' <input type="text" placeholder="Фамилия Имя">'
                             + ' <select>' + CLASS_OPTIONS + '</select>'
-                            + ' <label><input type="checkbox"> тест</label>';
+                            + ' <label style="display:flex; align-items:center; gap:4px;"><input type="checkbox"> тест</label>';
                         div.appendChild(row);
                     }
 
@@ -701,11 +727,43 @@ app.get('/admin', adminAuth, (req, res) => {
                         if (!items.length) alert('Заполните логин и имя хотя бы для одного ученика');
                     }
 
+                    // Поиск и фильтрация
                     function filterTable() {
-                        var v = document.getElementById('classFilter').value;
+                        var cls = document.getElementById('classFilter').value.toLowerCase();
+                        var search = document.getElementById('searchInput').value.toLowerCase();
+                        
                         document.querySelectorAll('#studentsTable tbody tr').forEach(function (tr) {
-                            tr.style.display = (!v || tr.getAttribute('data-class') === v) ? '' : 'none';
+                            var rowCls = tr.getAttribute('data-class').toLowerCase();
+                            var rowName = tr.cells[2].innerText.toLowerCase();
+                            
+                            var matchCls = !cls || rowCls === cls;
+                            var matchSearch = !search || rowName.includes(search);
+                            
+                            tr.style.display = (matchCls && matchSearch) ? '' : 'none';
                         });
+                    }
+
+                    // Сортировка таблицы
+                    function sortTable(n, isNumber) {
+                        var table = document.getElementById("studentsTable");
+                        var tbody = table.tBodies[0];
+                        var rows = Array.from(tbody.rows);
+                        var dir = table.getAttribute("data-dir") === "asc" ? -1 : 1;
+                        table.setAttribute("data-dir", dir === 1 ? "asc" : "desc");
+
+                        rows.sort(function(a, b) {
+                            var x = a.cells[n].innerText.trim();
+                            var y = b.cells[n].innerText.trim();
+                            
+                            if (isNumber) {
+                                x = parseFloat(x) || 0;
+                                y = parseFloat(y) || 0;
+                                return (x - y) * dir;
+                            }
+                            return x.localeCompare(y) * dir;
+                        });
+                        
+                        rows.forEach(r => tbody.appendChild(r));
                     }
 
                     addRow();
