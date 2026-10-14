@@ -761,6 +761,63 @@ function nextTask() {
 
         function showTheoryModal() { openGenericModal('Правило', state.currentTopic.theory); }
         function showHint() { openGenericModal('Умная подсказка', state.currentTask.hint); }
+		function showAchievements() {
+            const owned = state.achievements || [];
+            const ids = Object.keys(ACH_CATALOG);
+            const total = ids.length || owned.length;
+
+            const cards = ids.map(id => {
+                const a = ACH_CATALOG[id];
+                const got = owned.includes(id);
+                return `<div style="padding:10px; border-radius:8px; margin-bottom:6px; background:${got ? '#eafaf0' : '#f1f3f5'}; border:1px solid ${got ? '#2ecc71' : '#dee2e6'};">
+                    <div style="font-weight:bold;">${got ? a.icon : '🔒'} ${a.title}</div>
+                    <div style="font-size:0.85rem; color:#666;">${a.desc}</div>
+                </div>`;
+            }).join('');
+
+            const head = `<div style="margin-bottom:10px; font-weight:bold;">Получено: ${owned.length} из ${total}</div>`;
+            const body = cards || (owned.length
+                ? owned.map(id => `<div style="padding:10px; border-radius:8px; margin-bottom:6px; background:#eafaf0;">${achName(id)}</div>`).join('')
+                : '<i>Список наград пуст</i>');
+
+            openGenericModal('Твои награды', head + body);
+        }
+
+        function showPrimesTable() {
+            Logger.send('open_primes_table', { topic: state.currentTopic.id });
+            const primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
+            let rows = '';
+            for (let i = 0; i < primes.length; i += 5) {
+                rows += '<tr>' + primes.slice(i, i + 5).map(p => `<td style="padding:6px; text-align:center; border:1px solid #ddd;">${p}</td>`).join('') + '</tr>';
+            }
+            openGenericModal('🔢 Таблица простых чисел', `<table style="width:100%; border-collapse:collapse;">${rows}</table>`);
+        }
+
+        function showMultTable() {
+            Logger.send('open_mult_table', { topic: state.currentTopic.id });
+            let html = '<div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; font-size:0.9rem; text-align:center;">';
+            const n = 10;
+            html += '<tr><th style="padding:5px; background:#eaf1fb; border:1px solid #cbd5e1;">×</th>';
+            for (let j = 1; j <= n; j++) html += `<th style="padding:5px; background:#eaf1fb; border:1px solid #cbd5e1;">${j}</th>`;
+            html += '</tr>';
+            for (let i = 1; i <= n; i++) {
+                html += `<tr><th style="padding:5px; background:#eaf1fb; border:1px solid #cbd5e1;">${i}</th>`;
+                for (let j = 1; j <= n; j++) {
+                    html += `<td style="padding:5px; border:1px solid #e2e8f0;${i === j ? ' background:#fdecec; font-weight:bold;' : ''}">${i * j}</td>`;
+                }
+                html += '</tr>';
+            }
+            openGenericModal('✖️ Таблица умножения', html + '</table></div>');
+        }
+
+        function openCalculator() {
+            const firstTime = !localStorage.getItem('calcTried');
+            if (firstTime) localStorage.setItem('calcTried', '1');
+            Logger.send('open_calculator', { topic: state.currentTopic.id, firstTime });
+            openGenericModal('🧮 Калькулятор',
+                '<div style="text-align:center; color:var(--danger); font-weight:bold; font-size:1.4rem; margin:10px 0;">ЗАПРЕЩЕНКА! </div>' +
+                '<div style="text-align:center;">Калькулятором пользоваться нельзя </div>');
+        }
         function openGenericModal(title, textHTML) { document.getElementById('modal-title').innerText = title; document.getElementById('modal-text').innerHTML = textHTML; document.getElementById('generic-modal').classList.add('active'); }
         function closeModal() { document.getElementById('generic-modal').classList.remove('active'); }
         function goToMap(fromGame) { stopTimer(); clearReveal(); loadProgress(); showScreen('map-screen'); }
