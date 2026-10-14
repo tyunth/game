@@ -318,15 +318,17 @@
         function generateFractionSVG(numerator, denominator, type, interactive = false) {
             let svg = '';
             if (type === 'circle') {
-                svg = `<svg viewBox="-1 -1 2 2" style="width:100%; height:100%; transform: rotate(-90deg);">`;
+                // Увеличили viewBox, чтобы обводка в 2px была тонкой линией
+                svg = `<svg viewBox="-100 -100 200 200" style="width:100%; height:100%; transform: rotate(-90deg);">`;
                 for(let i = 0; i < denominator; i++) {
                     const startAngle = (i / denominator) * Math.PI * 2;
                     const endAngle = ((i + 1) / denominator) * Math.PI * 2;
-                    const x1 = Math.cos(startAngle), y1 = Math.sin(startAngle);
-                    const x2 = Math.cos(endAngle), y2 = Math.sin(endAngle);
+                    // Умножаем координаты на радиус 98, чтобы осталось место на краях
+                    const x1 = Math.cos(startAngle) * 98, y1 = Math.sin(startAngle) * 98;
+                    const x2 = Math.cos(endAngle) * 98, y2 = Math.sin(endAngle) * 98;
                     const largeArc = denominator === 1 ? 1 : 0;
                     const filled = (!interactive && i < numerator) ? 'filled' : '';
-                    const path = `M 0 0 L ${x1} ${y1} A 1 1 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                    const path = `M 0 0 L ${x1} ${y1} A 98 98 0 ${largeArc} 1 ${x2} ${y2} Z`;
                     svg += `<path d="${path}" class="svg-part ${filled}" ${interactive ? 'onclick="this.classList.toggle(\'filled\')"' : ''}></path>`;
                 }
                 svg += `</svg>`;
