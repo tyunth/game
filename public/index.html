@@ -290,9 +290,15 @@
             });
         }
 
-        function loadTeamStandings() {
+		function loadTeamStandings() {
             fetch('/api/team-standings').then(res => res.json()).then(data => {
                 const box = document.getElementById('team-rows');
+                const wk = document.getElementById('team-week');
+                
+                if (!box) return;
+                // Восстанавливаем отображение текущей недели
+                if (wk && data.weekStart) wk.innerText = `неделя с ${data.weekStart.slice(8)}.${data.weekStart.slice(5, 7)}`;
+
                 const me = allStudents.find(s => s.id === state.studentId);
                 const myClass = me ? me.class_name : null;
                 const teams = data.teams || [];
@@ -304,7 +310,8 @@
                         <span class="team-name">${i === 0 && t.points > 0 ? '👑 ' : ''}${t.class_name}</span>
                         <span class="team-bar"><i style="width:${pct}%"></i></span>
                         <span class="team-points" style="width: auto; margin-left: 8px;">${t.points} <small>очк.</small></span>
-                    </div>`;
+                    </div>
+                    <div class="team-note">играли на этой неделе: ${t.scored} из ${t.students}</div>`; // <- Восстановленная строка
                 }).join('') || '<div class="team-note">Пока нет данных</div>';
             }).catch(() => {});
         }
@@ -523,7 +530,7 @@ function nextTask() {
             svgCont.innerHTML = ''; ansCont.innerHTML = ''; ansCont.style.border = 'none';
             
             clearReveal();
-            state.currentTask = TOPICS[state.currentTopic.id].generate();
+            state.currentTask = generateTask(state.currentTopic.id);
             document.getElementById('ui-task').innerHTML = state.currentTask.text;
 
             // Восстанавливаем нужную клавиатуру перед каждым заданием
@@ -758,16 +765,29 @@ function nextTask() {
         function closeModal() { document.getElementById('generic-modal').classList.remove('active'); }
         function goToMap(fromGame) { stopTimer(); clearReveal(); loadProgress(); showScreen('map-screen'); }
 
-        function endSession(medal) {
+		function endSession(medal) {
             stopTimer(); clearReveal();
             showScreen('result-screen');
             document.getElementById('ui-medal').innerText = medal === 'gold' ? '🥇' : '🥈';
             document.getElementById('ui-result-title').innerText = medal === 'gold' ? 'Победа!' : 'Тренировка окончена';
             document.getElementById('ui-result-score').innerText = `Правильных ответов: ${state.score}/5`;
+            
+            // Очищаем прошлые ачивки на экране результатов перед новым запросом
+            const achEl = document.getElementById('ui-result-ach');
+            if (achEl) achEl.innerHTML = '';
+
             fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts })
-            });
+                // Добавлен deviceHash для серверного античита
+                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts, deviceHash: state.deviceHash })
+            }).then(r => r.json()).then(resp => {
+                // Восстановлен показ новых ачивок
+                if (achEl && resp.newAchievements && resp.newAchievements.length) {
+                    const names = resp.newAchievements.map(k => ACH_CATALOG[k] ? `${ACH_CATALOG[k].icon} ${ACH_CATALOG[k].title}` : k);
+                    achEl.innerHTML = '🏆 Новые награды: ' + names.join(', ');
+                    state.achievements = (state.achievements || []).concat(resp.newAchievements);
+                }
+            }).catch(() => {});
         }
     </script>
 </body>
