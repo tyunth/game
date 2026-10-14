@@ -319,9 +319,21 @@
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function getGCD(a, b) { return b === 0 ? a : getGCD(b, a % b); }
         function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+		// Память о недавно показанных заданиях — не даём повторяться
+        const recentTasks = {};
 
+        function generateTask(topicId) {
+            const list = recentTasks[topicId] || (recentTasks[topicId] = []);
+            let task = TOPICS[topicId].generate();
+            for (let i = 0; i < 12 && list.includes(task.text); i++) {
+                task = TOPICS[topicId].generate();
+            }
+            list.push(task.text);
+            if (list.length > 150) list.shift();
+            return task;
+        }
         // --- ГЕНЕРАЦИЯ SVG ФИГУР ---
-// --- ГЕНЕРАЦИЯ SVG ФИГУР ---
+
         function generateFractionSVG(numerator, denominator, type, interactive = false) {
             let svg = '';
             if (type === 'circle') {
