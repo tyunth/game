@@ -15,21 +15,16 @@
         select { width: 100%; max-width: 300px; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; border-radius: 12px; margin-bottom: 20px; outline: none; }
         button.btn { background: var(--primary); color: white; border: none; padding: 15px 30px; font-size: 1.2rem; border-radius: 12px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
         
-        /* Верхний бар навигации (для выхода и общей статы) */
         .top-nav { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; }
         .btn-exit { background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 5px; opacity: 0.7; }
         .btn-exit:active { opacity: 1; }
 
-        /* Карта тем */
         .map-container { position: relative; display: flex; flex-direction: column; align-items: center; gap: 46px; width: 100%; max-width: 400px; margin: 10px auto 0; padding: 24px 0 34px; overflow-y: auto; }
         .map-level { position: relative; display: flex; justify-content: center; align-items: flex-start; gap: 80px; }
-        /* Вертикальные соединения между рядами */
         .map-level:not(:first-child)::before { content: ''; position: absolute; top: -46px; left: 50%; transform: translateX(-50%); width: 5px; height: 46px; border-radius: 3px; background: repeating-linear-gradient(#c7d3e0 0 10px, transparent 10px 20px); }
-        /* Горизонтальное соединение НОД — НОК */
         .map-level.row2::after { content: ''; position: absolute; top: 45px; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 5px; border-radius: 3px; background: repeating-linear-gradient(90deg, #c7d3e0 0 10px, transparent 10px 20px); }
 
         .topic-wrapper { position: relative; }
-        
         .topic-node { position: relative; z-index: 1; width: 90px; height: 90px; border-radius: 50%; background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; border: 4px solid #357abd; box-shadow: 0 6px 0 #357abd; text-align: center; line-height: 1.1; }
         .topic-node.oval { width: auto; min-width: 90px; max-width: 300px; height: 90px; border-radius: 45px; padding: 0 22px; font-size: 0.95rem; }
         .topic-node:active:not(.locked) { transform: translateY(6px); box-shadow: 0 0 0 #357abd; }
@@ -38,7 +33,6 @@
         .topic-streak-badge { position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 2; font-size: 0.85rem; font-weight: bold; color: #d35400; background: #fff; padding: 2px 8px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .topic-done { position: absolute; top: -5px; right: -10px; background: white; border-radius: 50%; font-size: 1.3rem; box-shadow: 0 2px 4px rgba(0,0,0,0.2); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
 
-        /* Командный зачёт классов */
         .team-panel { width: 100%; max-width: 400px; background: white; border-radius: 16px; padding: 12px 14px; margin-bottom: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .team-title { font-weight: bold; margin-bottom: 10px; }
         .team-sub { font-weight: normal; font-size: 0.78rem; color: var(--muted); }
@@ -49,9 +43,7 @@
         .team-bar > i { display: block; height: 100%; background: linear-gradient(90deg, #f7c948, #f39c12); border-radius: 8px; transition: width 0.4s; }
         .team-points { width: 62px; text-align: right; font-weight: bold; font-size: 0.85rem; }
         .team-points small { color: var(--muted); font-weight: normal; }
-        .team-note { font-size: 0.72rem; color: var(--muted); text-align: left; margin: 0 0 2px 60px; }
 
-        /* Игровой экран */
         .game-header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; font-size: 1.2rem; margin-bottom: 20px; }
         .timer { color: var(--muted); font-family: monospace; font-size: 1.2rem; display: flex; align-items: center; gap: 5px; }
         .tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
@@ -59,13 +51,31 @@
         .btn-tool.theory { background: #3498db; }
 
         .task-container { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 400px; margin-bottom: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .answer-display { font-size: 2.5rem; min-height: 60px; border-bottom: 3px solid var(--primary); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .answer-display.error { color: var(--danger); border-color: var(--danger); }
-        .answer-display.correct { color: var(--success); border-color: var(--success); }
-        #ui-retry { color: #e67e22; font-weight: bold; min-height: 1.2em; margin-top: 8px; }
+        .answer-display { font-size: 2.5rem; min-height: 60px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--primary); }
+        
+        /* Стили для дробей */
+        .frac-block { display: inline-flex; align-items: center; font-size: 2rem; margin: 0 10px; }
+        .frac-whole { margin-right: 5px; }
+        .frac-part { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; vertical-align: middle; }
+        .frac-num { border-bottom: 3px solid currentColor; padding: 0 5px; min-width: 1.5em; text-align: center; }
+        .frac-den { padding: 0 5px; min-width: 1.5em; text-align: center; }
+        
+        /* Поля ввода в виде дробей */
+        .input-frac { display: inline-flex; flex-direction: column; align-items: center; color: var(--primary); font-size: 2.5rem; }
+        .input-num, .input-den, .input-whole { border: 2px dashed #ccc; border-radius: 8px; min-width: 60px; min-height: 60px; display: flex; align-items: center; justify-content: center; background: #fafafa; }
+        .input-num { border-bottom: 3px solid var(--primary); border-radius: 8px 8px 0 0; }
+        .input-den { border-top: none; border-radius: 0 0 8px 8px; }
+        .input-active { border-color: var(--primary) !important; background: #eff6ff !important; }
+        .error-shake { animation: shake 0.5s; color: var(--danger) !important; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+
+        /* SVG Интерактив */
+        .svg-container { margin: 15px auto; max-width: 200px; display: flex; justify-content: center; }
+        .svg-part { fill: white; stroke: #333; stroke-width: 2; cursor: pointer; transition: fill 0.2s; }
+        .svg-part.filled { fill: #f39c12; }
 
         .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
-        .numpad button { background: white; border: none; padding: 15px 0; font-size: 1.5rem; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .numpad button { background: white; border: none; padding: 15px 0; font-size: 1.5rem; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer;}
         .numpad.primes { grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .numpad.primes button { padding: 10px 0; font-size: 1.2rem; }
 
@@ -76,13 +86,15 @@
 </head>
 <body>
 
-<div id="login-screen" class="screen active">
+    <!-- ЭКРАН ВХОДА -->
+    <div id="login-screen" class="screen active">
         <h1 style="margin-top: 50px;">Математика</h1>
         <select id="class-select" onchange="filterStudents()"><option value="" disabled selected>Класс</option></select>
         <select id="student-select" disabled><option value="" disabled selected>Ученик</option></select>
         <button class="btn" onclick="login()">Войти</button>
     </div>
 
+    <!-- КАРТА ТЕМ -->
     <div id="map-screen" class="screen">
         <div class="top-nav">
             <button class="btn-exit" onclick="logout()">↩️</button>
@@ -92,9 +104,8 @@
         
         <div class="team-panel">
             <div class="team-title">🏆 Командный зачёт <span class="team-sub" id="team-week"></span></div>
-            <!-- Добавленная подпись с правилами -->
             <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; line-height: 1.3;">
-                В счёт класса идёт максимум 1 золотая медаль по каждой теме в день от одного участника.
+                В счёт класса идёт максимум 1 золотая медаль по каждой теме в день от участника.
             </div>
             <div id="team-rows"></div>
         </div>
@@ -116,15 +127,29 @@
                     <div class="topic-streak-badge" id="streak-nok">🔥 0</div>
                 </div>
             </div>
+            <!-- НОВЫЕ ТЕМЫ: ДРОБИ -->
+            <div class="map-level" style="margin-top: 20px;">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_basics" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_basics')">Дроби: Основы</div>
+                    <div class="topic-streak-badge" id="streak-fraction_basics">🔥 0</div>
+                </div>
+            </div>
             <div class="map-level">
                 <div class="topic-wrapper">
-                    <div class="topic-node locked">Дроби</div>
-                    <div class="topic-streak-badge" style="color: var(--muted);">В разработке</div>
+                    <div class="topic-node oval" id="node-mixed_to_improper" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('mixed_to_improper')">Перевод в неправильную</div>
+                    <div class="topic-streak-badge" id="streak-mixed_to_improper">🔥 0</div>
+                </div>
+            </div>
+            <div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-improper_to_mixed" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('improper_to_mixed')">Выделение целого</div>
+                    <div class="topic-streak-badge" id="streak-improper_to_mixed">🔥 0</div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ИГРОВОЙ ЭКРАН -->
     <div id="game-screen" class="screen">
         <div class="top-nav">
             <button class="btn-exit" onclick="goToMap(true)">↩️</button>
@@ -144,12 +169,16 @@
         </div>
 
         <div class="task-container">
-            <div id="ui-task" style="font-size: 1.8rem; font-weight: bold; margin-bottom: 20px;"></div>
-            <div class="answer-display" id="ui-answer"></div>
-            <div id="ui-retry"></div>
-            <button id="btn-next" class="btn" style="display:none; margin-top:10px;" onclick="nextAfterReveal()">Дальше</button>
+            <div id="ui-task" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 10px;"></div>
+            <div id="ui-svg-container" class="svg-container"></div>
+            
+            <div class="answer-display" id="ui-answer" style="border:none; margin-bottom:5px;"></div>
+            
+            <div id="ui-retry" style="color:#e67e22; font-weight:bold; min-height:1.2em; text-align:center;"></div>
+            <button id="btn-next" class="btn" style="display:none; margin:10px auto 0;" onclick="nextAfterReveal()">Дальше</button>
         </div>
 
+        <!-- КЛАВИАТУРА -->
         <div id="keyboard-standard" class="numpad">
             <button onclick="appendNum(1)">1</button><button onclick="appendNum(2)">2</button><button onclick="appendNum(3)">3</button>
             <button onclick="appendNum(4)">4</button><button onclick="appendNum(5)">5</button><button onclick="appendNum(6)">6</button>
@@ -166,6 +195,7 @@
         </div>
     </div>
 
+    <!-- РЕЗУЛЬТАТ -->
     <div id="result-screen" class="screen">
         <div id="ui-medal" style="font-size:5rem; margin-top:40px;">🥇</div>
         <div id="ui-result-title" style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;"></div>
@@ -175,6 +205,7 @@
         <button class="btn" style="margin-top:10px; background:#95a5a6;" onclick="goToMap()">🏠 На карту</button>
     </div>
 
+    <!-- МОДАЛКА -->
     <div id="generic-modal" class="modal-overlay">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -186,77 +217,13 @@
     </div>
 
     <script>
+        // БАЗА ДАННЫХ И СОСТОЯНИЯ
         let allStudents = [];
         let state = { studentId: null, deviceHash: null, mistakes: 0, locked: false, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
-
-        // Справочник достижений приходит с сервера (единый источник правды)
+        
         let ACH_CATALOG = {};
-
-        function loadAchievementsCatalog() {
-            return fetch('/api/achievements').then(r => r.json()).then(list => {
-                ACH_CATALOG = {};
-                list.forEach(a => { ACH_CATALOG[a.id] = a; });
-            }).catch(() => {});
-        }
-
-        function achName(id) {
-            const a = ACH_CATALOG[id];
-            return a ? `${a.icon} ${a.title}` : id;
-        }
-
-        // Сбор сведений об устройстве — только пассивные API, никаких запросов разрешений
-        function collectFingerprint() {
-            const d = {
-                ua: navigator.userAgent,
-                platform: navigator.platform || '',
-                screen: `${screen.width}x${screen.height}/${screen.availWidth}x${screen.availHeight}`,
-                viewport: `${window.innerWidth}x${window.innerHeight}`,
-                dpr: window.devicePixelRatio,
-                lang: navigator.language,
-                langs: (navigator.languages || []).join(','),
-                tz: Intl.DateTimeResolver().resolvedOptions().timeZone,
-                tzOffset: new Date().getTimezoneOffset(),
-                touch: navigator.maxTouchPoints || 0,
-                coarse: window.matchMedia('(pointer: coarse)').matches ? 1 : 0,
-                cores: navigator.hardwareConcurrency || 0,
-                memory: navigator.deviceMemory || null,
-                dnt: navigator.doNotTrack || '',
-                standalone: window.matchMedia('(display-mode: standalone)').matches ? 1 : 0
-            };
-            const key = [d.ua, d.platform, d.screen, d.lang, d.tz, d.cores].join('|');
-            return { data: d, key: key };
-        }
-
-        function simpleHash(str) {
-            let h = 5381;
-            for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) >>> 0;
-            return h.toString(16).padStart(8, '0');
-        }
-
-        async function initDevice() {
-            const info = collectFingerprint();
-            let hash = null;
-            try {
-                if (window.crypto && window.crypto.subtle) {
-                    const buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(info.key));
-                    hash = Array.from(new Uint8Array(buf)).slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
-                }
-            } catch (e) { hash = null; }
-            if (!hash) hash = simpleHash(info.key);
-            state.deviceHash = hash;
-            return { hash: hash, data: info.data };
-        }
-
-        async function registerDevice() {
-            if (!state.studentId) return;
-            try {
-                const dev = await initDevice();
-                await fetch('/api/device/register', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ studentId: state.studentId, device: Object.assign({ hash: dev.hash }, dev.data) })
-                });
-            } catch (e) { /* молча игнорируем */ }
-        }
+        function loadAchievementsCatalog() { fetch('/api/achievements').then(r => r.json()).then(list => { ACH_CATALOG = {}; list.forEach(a => { ACH_CATALOG[a.id] = a; }); }).catch(() => {}); }
+        function achName(id) { const a = ACH_CATALOG[id]; return a ? `${a.icon} ${a.title}` : id; }
 
         const Logger = {
             send: (action, details = {}) => {
@@ -265,29 +232,10 @@
             }
         };
 
-        // Переменные для таймера
-        let timerInterval;
-        let taskSeconds = 0;
-
-        function formatTime(sec) {
-            const m = Math.floor(sec / 60).toString().padStart(2, '0');
-            const s = (sec % 60).toString().padStart(2, '0');
-            return `⏱ ${m}:${s}`;
-        }
-
-        function startTimer() {
-            clearInterval(timerInterval);
-            taskSeconds = 0;
-            document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
-            timerInterval = setInterval(() => {
-                taskSeconds++;
-                document.getElementById('ui-timer').innerText = formatTime(taskSeconds);
-            }, 1000);
-        }
-
-        function stopTimer() {
-            clearInterval(timerInterval);
-        }
+        let timerInterval; let taskSeconds = 0;
+        function formatTime(sec) { const m = Math.floor(sec / 60).toString().padStart(2, '0'); const s = (sec % 60).toString().padStart(2, '0'); return `⏱ ${m}:${s}`; }
+        function startTimer() { clearInterval(timerInterval); taskSeconds = 0; document.getElementById('ui-timer').innerText = formatTime(taskSeconds); timerInterval = setInterval(() => { taskSeconds++; document.getElementById('ui-timer').innerText = formatTime(taskSeconds); }, 1000); }
+        function stopTimer() { clearInterval(timerInterval); }
 
         window.onload = () => {
             loadAchievementsCatalog();
@@ -300,10 +248,7 @@
                 const saved = localStorage.getItem('studentId');
                 if (saved && allStudents.find(s => s.id === saved)) {
                     state.studentId = saved;
-                    Logger.send('session_resume', { event: 'Автоматический вход' });
-                    registerDevice();
-                    loadProgress();
-                    showScreen('map-screen');
+                    loadProgress(); showScreen('map-screen');
                 }
             });
         };
@@ -319,40 +264,27 @@
         function login() {
             const sId = document.getElementById('student-select').value;
             if (!sId) return alert('Выбери имя!');
-            state.studentId = sId;
-            localStorage.setItem('studentId', sId);
-            Logger.send('login', { event: 'Обычный вход' });
-            registerDevice();
-            loadProgress();
-            showScreen('map-screen');
+            state.studentId = sId; localStorage.setItem('studentId', sId);
+            loadProgress(); showScreen('map-screen');
         }
 
-        function logout() {
-            clearReveal();
-            fetch('/api/device/leave', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: state.studentId, deviceHash: state.deviceHash })
-            }).catch(() => {});
-            localStorage.removeItem('studentId');
-            state.studentId = null;
-            showScreen('login-screen');
-        }
+        function logout() { localStorage.removeItem('studentId'); state.studentId = null; showScreen('login-screen'); }
 
         function loadProgress() {
             fetch(`/api/student-progress/${state.studentId}`).then(res => res.json()).then(data => {
                 const streakEl = document.getElementById('ui-streak');
                 if (streakEl) streakEl.innerText = `🔥 ${data.streak ?? 0}`;
                 state.achievements = data.achievements;
-                ['factor', 'nod', 'nok'].forEach(topic => {
-                const badge = document.getElementById(`streak-${topic}`);
-                if (badge) badge.innerText = `🔥 ${data.topicStreaks[topic] || 0}`;
+                
+                ['factor', 'nod', 'nok', 'fraction_basics', 'mixed_to_improper', 'improper_to_mixed'].forEach(topic => {
+                    const badge = document.getElementById(`streak-${topic}`);
+                    if (badge) badge.innerText = `🔥 ${data.topicStreaks[topic] || 0}`;
                 });
+                
                 document.querySelectorAll('.topic-done').forEach(el => el.remove());
                 data.todayTopics.forEach(t => {
                     const node = document.getElementById('node-' + t.topic);
-                    if (node && !node.querySelector('.topic-done')) {
-                        node.innerHTML += `<div class="topic-done">${t.medal === 'gold' ? '🥇' : '🥈'}</div>`;
-                    }
+                    if (node && !node.querySelector('.topic-done')) node.innerHTML += `<div class="topic-done">${t.medal === 'gold' ? '🥇' : '🥈'}</div>`;
                 });
                 loadTeamStandings();
             });
@@ -360,159 +292,208 @@
 
         function loadTeamStandings() {
             fetch('/api/team-standings').then(res => res.json()).then(data => {
-            const box = document.getElementById('team-rows');
-            const wk = document.getElementById('team-week');
-            if (!box) return;
-            if (wk && data.weekStart) wk.innerText = `неделя с ${data.weekStart.slice(8)}.${data.weekStart.slice(5, 7)}`;
+                const box = document.getElementById('team-rows');
+                const me = allStudents.find(s => s.id === state.studentId);
+                const myClass = me ? me.class_name : null;
+                const teams = data.teams || [];
+                const maxPoints = Math.max(...teams.map(t => t.points), 1);
 
-            const me = allStudents.find(s => s.id === state.studentId);
-            const myClass = me ? me.class_name : null;
-            const teams = data.teams || [];
-
-            // Находим текущий максимум очков среди всех команд (минимум 1, чтобы избежать деления на ноль)
-            const maxPoints = Math.max(...teams.map(t => t.points), 1);
-
-            box.innerHTML = teams.map((t, i) => {
-            // Заполнение полосы считается относительно лидера
-            const pct = Math.max(0, Math.min(100, Math.round(t.points / maxPoints * 100)));
-            
-            return `<div class="team-row ${t.class_name === myClass ? 'mine' : ''}">
-                <span class="team-name">${i === 0 && t.points > 0 ? '👑 ' : ''}${t.class_name}</span>
-                <span class="team-bar"><i style="width:${pct}%"></i></span>
-                <span class="team-points" style="width: auto; margin-left: 8px;">${t.points} <small>очк.</small></span>
-            </div>
-            <div class="team-note">играли на этой неделе: ${t.scored} из ${t.students}</div>`;
-            }).join('') || '<div class="team-note">Пока нет данных</div>';
+                box.innerHTML = teams.map((t, i) => {
+                    const pct = Math.max(0, Math.min(100, Math.round(t.points / maxPoints * 100)));
+                    return `<div class="team-row ${t.class_name === myClass ? 'mine' : ''}">
+                        <span class="team-name">${i === 0 && t.points > 0 ? '👑 ' : ''}${t.class_name}</span>
+                        <span class="team-bar"><i style="width:${pct}%"></i></span>
+                        <span class="team-points" style="width: auto; margin-left: 8px;">${t.points} <small>очк.</small></span>
+                    </div>`;
+                }).join('') || '<div class="team-note">Пока нет данных</div>';
             }).catch(() => {});
         }
 
         function showScreen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-
         function getGCD(a, b) { return b === 0 ? a : getGCD(b, a % b); }
         function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-        
-        // Память о недавно показанных заданиях — не даём повторяться в пределах вкладки
-        const recentTasks = {};   // id темы -> список последних заданий
 
-        function generateTask(topicId) {
-            const list = recentTasks[topicId] || (recentTasks[topicId] = []);
-            let task = TOPICS[topicId].generate();
-            for (let i = 0; i < 12 && list.includes(task.text); i++) {
-                task = TOPICS[topicId].generate();
+        // --- ГЕНЕРАЦИЯ SVG ФИГУР ---
+        function generateFractionSVG(numerator, denominator, type, interactive = false) {
+            let svg = '';
+            if (type === 'circle') {
+                svg = `<svg viewBox="-1 -1 2 2" style="width:100%; height:100%; transform: rotate(-90deg);">`;
+                for(let i = 0; i < denominator; i++) {
+                    const startAngle = (i / denominator) * Math.PI * 2;
+                    const endAngle = ((i + 1) / denominator) * Math.PI * 2;
+                    const x1 = Math.cos(startAngle), y1 = Math.sin(startAngle);
+                    const x2 = Math.cos(endAngle), y2 = Math.sin(endAngle);
+                    const largeArc = denominator === 1 ? 1 : 0;
+                    const filled = (!interactive && i < numerator) ? 'filled' : '';
+                    const path = `M 0 0 L ${x1} ${y1} A 1 1 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                    svg += `<path d="${path}" class="svg-part ${filled}" ${interactive ? 'onclick="this.classList.toggle(\\\'filled\\\')"' : ''}></path>`;
+                }
+                svg += `</svg>`;
+            } else { // rect
+                const w = 200, h = 60;
+                const partW = w / denominator;
+                svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:100%;">`;
+                for(let i = 0; i < denominator; i++) {
+                    const filled = (!interactive && i < numerator) ? 'filled' : '';
+                    svg += `<rect x="${i * partW}" y="0" width="${partW}" height="${h}" class="svg-part ${filled}" ${interactive ? 'onclick="this.classList.toggle(\\\'filled\\\')"' : ''}></rect>`;
+                }
+                svg += `</svg>`;
             }
-            list.push(task.text);
-            if (list.length > 150) list.shift();
-            return task;
+            return svg;
         }
 
+        // --- БАЗА ТЕМ ---
         const TOPICS = {
-            'factor': {
-                id: 'factor', theory: '<b>Простое число</b> — это число, которое делится только на 1 и само на себя (2, 3, 5, 7, 11, 13...).<br><br>Любое составное число можно собрать из простых чисел, как из деталей лего. Чтобы разложить число, пробуй делить его на самые маленькие простые числа по порядку.<br><br><b>Пример: разложим 12</b><br>1) Делим на 2: 12 : 2 = 6<br>2) Снова делим на 2: 6 : 2 = 3<br>3) 3 делится только на 3: 3 : 3 = 1<br><br><i>Ответ: 12 = 2 × 2 × 3</i>',
+            'factor': { generate: () => { return { text: `Разложи 12`, factors: [2,2,3], hint: `Начни делить с самых маленьких.` }; } },
+            'nod': { generate: () => { return { text: `НОД(12, 18)`, answer: 6, hint: `Разложи числа на простые множители.` }; } },
+            'nok': { generate: () => { return { text: `НОК(6, 8)`, answer: 24, hint: `Выпиши множители большего числа.` }; } },
+            
+            // НОВЫЕ ТЕМЫ
+            'fraction_basics': {
+                id: 'fraction_basics', theory: '<b>Дробь</b> показывает, на сколько частей разделили целое и сколько таких частей взяли.<br><br>• <b>Знаменатель</b> (внизу) — на сколько частей разделили.<br>• <b>Числитель</b> (вверху) — сколько частей взяли.',
                 generate: () => {
-                    // 2–4 простых множителя, число от 12 до 250.
-                    // Простые берём ≤ 19 — всё входит в клавиатуру (до 47).
-                    const smallPrimes = [2,3,5,7,11,13,17,19];
-                    let num = 0, factors = [];
-                    let guard = 0;
-                    do {
-                        const count = 2 + randomInt(0, 2);
-                        factors = [];
-                        for (let i = 0; i < count; i++) factors.push(smallPrimes[randomInt(0, smallPrimes.length - 1)]);
-                        num = factors.reduce((x, p) => x * p, 1);
-                    } while ((num < 12 || num > 250) && ++guard < 80);
-                    return { text: `Разложи ${num}`, factors: factors, hint: `Начни делить ${num} с самых маленьких простых чисел (2, 3, 5) или вспомни таблицу умножения.` };
+                    const den = randomInt(3, 10);
+                    const num = randomInt(1, den - 1);
+                    const shape = Math.random() > 0.5 ? 'circle' : 'rect';
+                    const isConstructor = Math.random() > 0.5;
+                    
+                    if (isConstructor) {
+                        return {
+                            type: 'fraction_constructor',
+                            text: `Закрась <span class="frac-block"><span class="frac-part"><span class="frac-num">${num}</span><span class="frac-den">${den}</span></span></span> фигуры`,
+                            svg: generateFractionSVG(num, den, shape, true),
+                            answer: num, // нужно закрасить ровно num частей
+                            hint: `Знаменатель (внизу) говорит, что фигура разделена на ${den} частей. Тебе нужно нажать на ${num} частей, чтобы их закрасить.`
+                        };
+                    } else {
+                        return {
+                            type: 'fraction_read',
+                            text: `Какая часть фигуры закрашена?`,
+                            svg: generateFractionSVG(num, den, shape, false),
+                            answer: { num, den },
+                            hint: `Посчитай, сколько всего кусочков — это будет знаменатель (пиши внизу). А сколько закрашено оранжевым — это числитель (пиши вверху).`
+                        };
+                    }
                 }
             },
-            'nod': {
-                id: 'nod', theory: '<b>НОД (Наибольший общий делитель)</b> — это самое большое число, на которое оба твоих числа делятся без остатка.<br><br><b>Как найти:</b><br>Разложи оба числа на простые множители, найди <i>одинаковые</i> и перемножь их.<br><br><b>Пример: НОД(12, 18)</b><br>12 = <b>2</b> × 2 × <b>3</b><br>18 = <b>2</b> × <b>3</b> × 3<br>Общие множители: 2 и 3.<br><i>НОД = 2 × 3 = 6</i><br><br>💡 <b>Лайфхаки:</b><br>• Если большее число делится на меньшее, то НОД — это меньшее число (например, НОД(5, 15) = 5).<br>• Если общих делителей вообще нет, НОД = 1.',
+            'mixed_to_improper': {
+                id: 'mixed_to_improper', theory: '<b>Как перевести смешанное число в неправильную дробь?</b><br><br>Нужно целое умножить на знаменатель и прибавить числитель. Знаменатель остается прежним.<br><br><b>Пример:</b> 3 ⅖ = (3 × 5 + 2) / 5 = 17 / 5',
                 generate: () => {
-                    const r = Math.random();
-                    let a, b, hint;
-                    if (r < 0.15) {
-                        // Взаимно простые — подбираем, а не берём из 7 фиксированных пар
-                        let guard = 0;
-                        do { a = randomInt(5, 99); b = randomInt(5, 99); } while (getGCD(a, b) !== 1 && ++guard < 60);
-                        hint = "У этих чисел нет общих делителей, кроме единицы. Они взаимно простые!";
-                    } else if (r < 0.35) {
-                        // Одно делится на другое
-                        const ans = randomInt(2, 12);
-                        a = ans; b = ans * randomInt(2, 7);
-                        if (Math.random() > 0.5) [a,b] = [b,a];
-                        hint = "Внимательно посмотри на числа. Большее делится на меньшее без остатка? Значит, меньшее и есть НОД.";
-                    } else {
-                        // Строим так, чтобы НОД был заранее известен: НОД(ans*u1, ans*u2) = ans
-                        const ans = randomInt(2, 12);
-                        let u1 = randomInt(1, 9), u2 = randomInt(1, 9);
-                        let guard = 0;
-                        while ((getGCD(u1, u2) !== 1 || u1 === u2) && ++guard < 60) u2 = randomInt(1, 9);
-                        a = ans * u1; b = ans * u2;
-                        hint = "Разложи оба числа на простые множители и перемножь общие.";
-                    }
-                    return { text: `НОД(${a}, ${b})`, answer: getGCD(a, b), hint: hint };
+                    const whole = randomInt(2, 9);
+                    const den = randomInt(3, 9);
+                    const num = randomInt(1, den - 1);
+                    const answer = whole * den + num;
+                    return {
+                        type: 'mixed_to_improper',
+                        text: `Переведи в неправильную дробь:`,
+                        html: `<div class="frac-block">
+                                  <span class="frac-whole">${whole}</span>
+                                  <span class="frac-part"><span class="frac-num">${num}</span><span class="frac-den">${den}</span></span>
+                                  <span style="margin:0 10px;">=</span>
+                                  <div class="input-frac">
+                                      <div class="input-num input-active" id="inp-improper-num">?</div>
+                                      <div class="input-den">${den}</div>
+                                  </div>
+                               </div>`,
+                        answer: answer,
+                        hint: `Умножь целое число (${whole}) на знаменатель (${den}) и прибавь старый числитель (${num}). Это и будет твой новый ответ!`
+                    };
                 }
             },
-            'nok': {
-                id: 'nok', theory: '<b>НОК (Наименьшее общее кратное)</b> — это самое маленькое число, которое <i>само</i> делится на оба твоих числа без остатка.<br><br><b>Как найти:</b><br>Разложи числа на множители. Выпиши множители бóльшего числа и добавь к ним те множители меньшего, которых не хватает.<br><br><b>Пример: НОК(6, 8)</b><br>8 = 2 × 2 × 2<br>6 = 2 × <b>3</b> (двойка уже есть в восьмерке, не хватает только тройки)<br><i>НОК = 8 × 3 = 24</i><br><br>💡 <b>Лайфхаки:</b><br>• Если большее число делится на меньшее, то НОК — это бóльшее число (например, НОК(5, 15) = 15).<br>• Если у чисел нет общих делителей, просто перемножь их (например, НОК(3, 4) = 12).',
+            'improper_to_mixed': {
+                id: 'improper_to_mixed', theory: '<b>Как выделить целую часть?</b><br><br>Нужно разделить числитель на знаменатель. <br>• Результат деления — это целая часть.<br>• Остаток — это новый числитель.',
                 generate: () => {
-                    const r = Math.random();
-                    let a, b, hint;
-                    if (r < 0.15) {
-                        // Взаимно простые — подбираем, а не берём из 7 фиксированных пар
-                        let guard = 0;
-                        do { a = randomInt(4, 45); b = randomInt(4, 45); } while (getGCD(a, b) !== 1 && ++guard < 60);
-                        hint = "У этих чисел нет общих делителей (кроме 1). Их НОК равен их произведению!";
-                    } else if (r < 0.35) {
-                        // Одно делится на другое
-                        a = randomInt(3, 12); b = a * randomInt(2, 7);
-                        if (Math.random() > 0.5) [a,b] = [b,a];
-                        hint = "Большее число уже делится на меньшее. Значит, большее число и есть НОК.";
-                    } else {
-                        // Строим так, чтобы общий множитель был известен: НОД(base*u1, base*u2) = base
-                        const base = randomInt(2, 9);
-                        let u1 = randomInt(2, 7), u2 = randomInt(2, 7);
-                        let guard = 0;
-                        while ((getGCD(u1, u2) !== 1 || u1 === u2) && ++guard < 60) u2 = randomInt(2, 7);
-                        a = base * u1; b = base * u2;
-                        hint = "Выпиши множители большего числа и добавь недостающие от меньшего.";
-                    }
-                    return { text: `НОК(${a}, ${b})`, answer: (a * b) / getGCD(a, b), hint: hint };
+                    const whole = randomInt(2, 8);
+                    const den = randomInt(3, 9);
+                    const rem = randomInt(1, den - 1);
+                    const num = whole * den + rem;
+                    return {
+                        type: 'improper_to_mixed',
+                        text: `Выдели целую часть:`,
+                        html: `<div class="frac-block">
+                                  <span class="frac-part"><span class="frac-num">${num}</span><span class="frac-den">${den}</span></span>
+                                  <span style="margin:0 10px;">=</span>
+                                  <div class="input-frac" style="flex-direction:row;">
+                                      <div class="input-whole input-active" id="inp-mixed-whole" style="margin-right:5px; border-radius:8px;">?</div>
+                                      <div class="input-frac" style="font-size:1.5rem;">
+                                          <div class="input-num" id="inp-mixed-rem" style="min-width:40px; min-height:40px; opacity:0.5;">?</div>
+                                          <div class="input-den" style="min-width:40px; min-height:40px;">${den}</div>
+                                      </div>
+                                  </div>
+                               </div>`,
+                        answer1: whole,
+                        answer2: rem,
+                        step: 1, // 1 - вводим целое, 2 - вводим остаток
+                        hint: `Раздели ${num} на ${den}. Сколько получится полных целых? Запиши целое. Затем посчитай остаток.`
+                    };
                 }
             }
         };
 
         function selectTopic(id) {
             state.currentTopic = TOPICS[id];
-            Logger.send('start_topic', { topic: id });
             state.hearts = 3; state.score = 0; state.hintsUsed = 0;
             updateHearts(); document.getElementById('ui-score').innerText = '0/5';
             
-            const isFactor = (id === 'factor');
-            document.getElementById('keyboard-standard').style.display = isFactor ? 'none' : 'grid';
-            document.getElementById('keyboard-prime').style.display = isFactor ? 'grid' : 'none';
+            // Скрываем все клавиатуры по умолчанию
+            document.getElementById('keyboard-standard').style.display = 'none';
+            document.getElementById('keyboard-prime').style.display = 'none';
+            
+            if (id === 'factor') document.getElementById('keyboard-prime').style.display = 'grid';
+            else document.getElementById('keyboard-standard').style.display = 'grid';
             
             showScreen('game-screen');
-            startTimer(); // таймер идёт на все 5 заданий
+            startTimer();
             nextTask();
-        }
-
-        function goToMap(fromGame) {
-            stopTimer();
-            clearReveal();
-            if (fromGame) Logger.send('exit_level', { topic: state.currentTopic.id, score: state.score });
-            loadProgress();
-            showScreen('map-screen');
         }
 
         function nextTask() {
             state.currentInput = ''; state.currentFactors = []; state.startTime = Date.now();
             state.mistakes = 0; state.locked = false;
+            
+            const svgCont = document.getElementById('ui-svg-container');
+            const ansCont = document.getElementById('ui-answer');
+            svgCont.innerHTML = ''; ansCont.innerHTML = ''; ansCont.style.border = 'none';
+            
             clearReveal();
-            updateDisplay();
-            state.currentTask = generateTask(state.currentTopic.id);
-            document.getElementById('ui-task').innerText = state.currentTask.text;
+            state.currentTask = TOPICS[state.currentTopic.id].generate();
+            document.getElementById('ui-task').innerHTML = state.currentTask.text;
+
+            // Рендер UI в зависимости от типа задачи
+            const t = state.currentTask;
+            if (t.type === 'fraction_constructor') {
+                svgCont.innerHTML = t.svg;
+                document.getElementById('keyboard-standard').style.display = 'none';
+                ansCont.innerHTML = `<button class="btn" style="margin-top:10px; width:150px;" onclick="checkAnswer()">Готово</button>`;
+            } 
+            else if (t.type === 'fraction_read') {
+                svgCont.innerHTML = t.svg;
+                state.inputFocus = 'num'; // 'num' или 'den'
+                ansCont.innerHTML = `
+                    <div class="input-frac">
+                        <div class="input-num input-active" id="inp-read-num" onclick="setFocus('num')">?</div>
+                        <div class="input-den" id="inp-read-den" onclick="setFocus('den')">?</div>
+                    </div>`;
+            }
+            else if (t.type === 'mixed_to_improper' || t.type === 'improper_to_mixed') {
+                ansCont.innerHTML = t.html;
+            }
+            else {
+                ansCont.style.borderBottom = '3px solid var(--primary)';
+                updateDisplay();
+            }
         }
 
-        // Сброс показа правильного ответа и кнопки «Дальше»
+        function setFocus(field) {
+            state.inputFocus = field;
+            state.currentInput = ''; // Сбрасываем буфер ввода при смене поля
+            document.querySelectorAll('.input-active').forEach(el => el.classList.remove('input-active'));
+            if(field === 'num') document.getElementById('inp-read-num').classList.add('input-active');
+            if(field === 'den') document.getElementById('inp-read-den').classList.add('input-active');
+        }
+
+        // Сброс показа правильного ответа
+        let revealTimer = null;
         function clearReveal() {
             if (revealTimer) { clearInterval(revealTimer); revealTimer = null; }
             const btn = document.getElementById('btn-next');
@@ -521,192 +502,195 @@
             if (r) r.innerText = '';
         }
 
-        function appendNum(num) { if (state.locked) return; if (state.currentInput.length < 5) { state.currentInput += num; updateDisplay(); } }
+        function appendNum(num) {
+            if (state.locked) return;
+            const t = state.currentTask;
+            
+            if (t.type === 'fraction_read') {
+                if(state.currentInput.length < 2) state.currentInput += num;
+                document.getElementById(`inp-read-${state.inputFocus}`).innerText = state.currentInput;
+                // Авто-переключение
+                if(state.inputFocus === 'num' && state.currentInput.length > 0) {
+                    t.userNum = parseInt(state.currentInput);
+                    setTimeout(() => { setFocus('den'); }, 200);
+                } else if (state.inputFocus === 'den') {
+                    t.userDen = parseInt(state.currentInput);
+                }
+            }
+            else if (t.type === 'mixed_to_improper') {
+                if(state.currentInput.length < 3) state.currentInput += num;
+                document.getElementById('inp-improper-num').innerText = state.currentInput;
+            }
+            else if (t.type === 'improper_to_mixed') {
+                if(state.currentInput.length < 2) state.currentInput += num;
+                if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = state.currentInput;
+                else document.getElementById('inp-mixed-rem').innerText = state.currentInput;
+            }
+            else {
+                if (state.currentInput.length < 5) state.currentInput += num; 
+                updateDisplay(); 
+            }
+        }
+
         function appendFactor(num) { if (state.locked) return; state.currentFactors.push(num); updateDisplay(); }
-        function clearAnswer() { if (state.locked) return; state.currentInput = ''; state.currentFactors = []; updateDisplay(); }
+        
+        function clearAnswer() { 
+            if (state.locked) return; 
+            state.currentInput = ''; 
+            const t = state.currentTask;
+            if (t.type === 'fraction_read') {
+                document.getElementById(`inp-read-${state.inputFocus}`).innerText = '?';
+                if(state.inputFocus === 'num') t.userNum = null; else t.userDen = null;
+            } else if (t.type === 'mixed_to_improper') {
+                document.getElementById('inp-improper-num').innerText = '?';
+            } else if (t.type === 'improper_to_mixed') {
+                if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = '?';
+                else document.getElementById('inp-mixed-rem').innerText = '?';
+            } else {
+                state.currentFactors = []; updateDisplay(); 
+            }
+        }
         
         function updateDisplay() {
+            if (state.currentTask.type) return; // У новых типов свой UI
             const d = document.getElementById('ui-answer');
-            d.classList.remove('error');
+            d.classList.remove('error', 'correct');
             d.innerText = state.currentTopic.id === 'factor' ? (state.currentFactors.length ? state.currentFactors.join(' × ') : '?') : (state.currentInput || '?');
         }
 
-        function submitAnswer(isCorrect, input, topicId) {
-            const timeTaken = Math.round((Date.now() - state.startTime) / 1000);
-            Logger.send('answer_submit', { topic: topicId, correct: isCorrect, input, timeSec: timeTaken });
-            handleResult(isCorrect);
-        }
-
         function checkAnswer() {
-            if (state.locked || !state.currentInput) return;
-            submitAnswer(parseInt(state.currentInput) === state.currentTask.answer, state.currentInput, state.currentTopic.id);
+            if (state.locked) return;
+            const t = state.currentTask;
+            let isCorrect = false;
+            let val = state.currentInput;
+
+            if (t.type === 'fraction_constructor') {
+                const filled = document.querySelectorAll('.svg-part.filled').length;
+                isCorrect = (filled === t.answer);
+                val = `Закрашено ${filled}`;
+            } 
+            else if (t.type === 'fraction_read') {
+                if (!t.userNum || !t.userDen) return; // Не ввел оба
+                isCorrect = (t.userNum === t.answer.num && t.userDen === t.answer.den);
+                val = `${t.userNum}/${t.userDen}`;
+            }
+            else if (t.type === 'mixed_to_improper') {
+                if (!val) return;
+                isCorrect = (parseInt(val) === t.answer);
+            }
+            else if (t.type === 'improper_to_mixed') {
+                if (!val) return;
+                const vInt = parseInt(val);
+                if (t.step === 1) {
+                    if (vInt === t.answer1) {
+                        // Правильно ввел целое, переходим ко второму шагу
+                        t.step = 2;
+                        state.currentInput = '';
+                        document.getElementById('inp-mixed-whole').classList.remove('input-active');
+                        document.getElementById('inp-mixed-rem').classList.add('input-active');
+                        document.getElementById('inp-mixed-rem').style.opacity = '1';
+                        return; // Не вызываем обработчик финала
+                    } else { isCorrect = false; }
+                } else {
+                    if (vInt === t.answer2) { isCorrect = true; } 
+                    else { isCorrect = false; }
+                }
+            }
+            else {
+                if (!val) return;
+                isCorrect = (parseInt(val) === t.answer);
+            }
+
+            const timeTaken = Math.round((Date.now() - state.startTime) / 1000);
+            handleResult(isCorrect, val);
         }
 
         function checkFactorAnswer() {
             if (state.locked || !state.currentFactors.length) return;
             const userAns = [...state.currentFactors].sort((a, b) => a - b).join(',');
             const trueAns = [...state.currentTask.factors].sort((a, b) => a - b).join(',');
-            submitAnswer(userAns === trueAns, userAns, 'factor');
+            handleResult(userAns === trueAns, userAns);
         }
 
-        let revealTimer = null;
-
-        function handleResult(isCorrect) {
+        function handleResult(isCorrect, val) {
             if (isCorrect) {
                 state.score++; document.getElementById('ui-score').innerText = `${state.score}/5`;
                 if (state.score >= 5) endSession('gold'); else nextTask();
                 return;
             }
-
-            // Ошибка — всегда минус сердце
+            // Ошибка
             state.mistakes++;
             state.hearts--; updateHearts();
+            if (state.hearts <= 0 || state.mistakes >= 2) { showCorrectAnswer(); return; }
 
-            // Либо сердца кончились, либо вторая ошибка — показываем верный ответ
-            // (задание не засчитываем; если сердца кончились, nextAfterReveal завершит игру)
-            if (state.hearts <= 0 || state.mistakes >= 2) {
-                showCorrectAnswer();
-                return;
-            }
-
-            // Первая ошибка: остаёмся на этом же примере, можно попробовать снова
-            const d = document.getElementById('ui-answer');
+            // Тряска элемента с ошибкой
+            const t = state.currentTask;
+            let errEl = document.getElementById('ui-answer');
+            if (t.type === 'mixed_to_improper') errEl = document.getElementById('inp-improper-num');
+            if (t.type === 'improper_to_mixed') errEl = (t.step === 1) ? document.getElementById('inp-mixed-whole') : document.getElementById('inp-mixed-rem');
+            
+            errEl.classList.add('error-shake');
             document.getElementById('ui-retry').innerText = 'Попробуй ещё раз';
-            state.currentInput = ''; state.currentFactors = [];
-            updateDisplay();
-            d.classList.add('error');
-            setTimeout(() => d.classList.remove('error'), 600);
+            
+            setTimeout(() => { 
+                errEl.classList.remove('error-shake');
+                state.currentInput = ''; clearAnswer();
+            }, 600);
         }
 
         function showCorrectAnswer() {
-            const ans = state.currentTopic.id === 'factor'
-                ? state.currentTask.factors.join(' × ')
-                : String(state.currentTask.answer);
-
-            const d = document.getElementById('ui-answer');
-            d.classList.remove('error');
-            d.classList.add('correct');
-            d.innerText = 'Правильный ответ: ' + ans;
-            document.getElementById('ui-retry').innerText = 'Разбери пример, потом идём дальше';
-            Logger.send('answer_revealed', { topic: state.currentTopic.id, task: state.currentTask.text });
-
             state.locked = true;
+            document.getElementById('ui-retry').innerText = 'Разбери пример, потом идём дальше';
+            
+            // В зависимости от типа подсвечиваем правильный ответ
+            const t = state.currentTask;
+            if(t.type === 'fraction_constructor') {
+                document.getElementById('ui-retry').innerText = `Надо было закрасить ровно ${t.answer} кус.`;
+            } else if (t.type === 'fraction_read') {
+                document.getElementById('inp-read-num').innerText = t.answer.num;
+                document.getElementById('inp-read-den').innerText = t.answer.den;
+                document.querySelectorAll('.input-num, .input-den').forEach(e => {e.classList.remove('input-active'); e.classList.add('correct');});
+            } else if (t.type === 'mixed_to_improper') {
+                document.getElementById('inp-improper-num').innerText = t.answer;
+                document.getElementById('inp-improper-num').classList.add('correct');
+            } else if (t.type === 'improper_to_mixed') {
+                document.getElementById('inp-mixed-whole').innerText = t.answer1;
+                document.getElementById('inp-mixed-rem').innerText = t.answer2;
+                document.getElementById('inp-mixed-rem').style.opacity = '1';
+                document.getElementById('inp-mixed-whole').classList.add('correct');
+                document.getElementById('inp-mixed-rem').classList.add('correct');
+            } else {
+                const d = document.getElementById('ui-answer');
+                d.classList.add('correct');
+                d.innerText = 'Правильный ответ: ' + (t.factors ? t.factors.join(' × ') : t.answer);
+            }
+
             const btn = document.getElementById('btn-next');
             btn.style.display = 'block';
-
             let left = 7;
             btn.textContent = 'Дальше (' + left + ')';
             clearInterval(revealTimer);
-            revealTimer = setInterval(() => {
-                left--;
-                if (left <= 0) { nextAfterReveal(); return; }
-                btn.textContent = 'Дальше (' + left + ')';
-            }, 1000);
+            revealTimer = setInterval(() => { left--; if (left <= 0) { nextAfterReveal(); return; } btn.textContent = 'Дальше (' + left + ')'; }, 1000);
         }
 
-        function nextAfterReveal() {
-            clearReveal();
-            if (state.hearts <= 0) endSession('silver'); else nextTask();
-        }
-
+        function nextAfterReveal() { clearReveal(); if (state.hearts <= 0) endSession('silver'); else nextTask(); }
         function updateHearts() { document.getElementById('ui-hearts').innerText = '❤️'.repeat(state.hearts) + '🖤'.repeat(3 - Math.max(0, state.hearts)); }
 
-        function showTheoryModal() {
-            Logger.send('view_theory', { topic: state.currentTopic.id });
-            openGenericModal('Правило', state.currentTopic.theory);
-        }
-
-        function showPrimesTable() {
-            Logger.send('open_primes_table', { topic: state.currentTopic.id });
-            const primes = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97];
-            let rows = '';
-            for (let i = 0; i < primes.length; i += 5) {
-                rows += '<tr>' + primes.slice(i, i + 5).map(p => `<td style="padding:6px; text-align:center; border:1px solid #ddd;">${p}</td>`).join('') + '</tr>';
-            }
-            openGenericModal('🔢 Таблица простых чисел', `<table style="width:100%; border-collapse:collapse;">${rows}</table>`);
-        }
-
-        function showMultTable() {
-            Logger.send('open_mult_table', { topic: state.currentTopic.id });
-            let html = '<div style="overflow:auto;"><table style="width:100%; border-collapse:collapse; font-size:0.9rem; text-align:center;">';
-            const n = 10;
-            html += '<tr><th style="padding:5px; background:#eaf1fb; border:1px solid #cbd5e1;">×</th>';
-            for (let j = 1; j <= n; j++) html += `<th style="padding:5px; background:#eaf1fb; border:1px solid #cbd5e1;">${j}</th>`;
-            html += '</tr>';
-            for (let i = 1; i <= n; i++) {
-                html += `<tr><th style="padding:5px; background:#eaf1fb; border:1px solid #cbd5e1;">${i}</th>`;
-                for (let j = 1; j <= n; j++) {
-                    html += `<td style="padding:5px; border:1px solid #e2e8f0;${i === j ? ' background:#fdecec; font-weight:bold;' : ''}">${i * j}</td>`;
-                }
-                html += '</tr>';
-            }
-            openGenericModal('✖️ Таблица умножения', html + '</table></div>');
-        }
-
-        function openCalculator() {
-            const firstTime = !localStorage.getItem('calcTried');
-            if (firstTime) localStorage.setItem('calcTried', '1');
-            Logger.send('open_calculator', { topic: state.currentTopic.id, firstTime });
-            openGenericModal('🧮 Калькулятор',
-                '<div style="text-align:center; color:var(--danger); font-weight:bold; font-size:1.4rem; margin:10px 0;">ЗАПРЕЩЕНКА! </div>' +
-                '<div style="text-align:center;">Калькулятором пользоваться нельзя </div>');
-        }
-
-        function showHint() {
-            state.hintsUsed++;
-            Logger.send('use_hint', { topic: state.currentTopic.id, currentTask: state.currentTask.text });
-            openGenericModal('Умная подсказка', state.currentTask.hint);
-        }
-
-        function showAchievements() {
-            const owned = state.achievements || [];
-            const ids = Object.keys(ACH_CATALOG);
-            const total = ids.length || owned.length;
-
-            const cards = ids.map(id => {
-                const a = ACH_CATALOG[id];
-                const got = owned.includes(id);
-                return `<div style="padding:10px; border-radius:8px; margin-bottom:6px; background:${got ? '#eafaf0' : '#f1f3f5'}; border:1px solid ${got ? '#2ecc71' : '#dee2e6'};">
-                    <div style="font-weight:bold;">${got ? a.icon : '🔒'} ${a.title}</div>
-                    <div style="font-size:0.85rem; color:#666;">${a.desc}</div>
-                </div>`;
-            }).join('');
-
-            const head = `<div style="margin-bottom:10px; font-weight:bold;">Получено: ${owned.length} из ${total}</div>`;
-            const body = cards || (owned.length
-                ? owned.map(id => `<div style="padding:10px; border-radius:8px; margin-bottom:6px; background:#eafaf0;">${achName(id)}</div>`).join('')
-                : '<i>Список наград пуст</i>');
-
-            openGenericModal('Твои награды', head + body);
-        }
-
-        function openGenericModal(title, textHTML) {
-            document.getElementById('modal-title').innerText = title;
-            document.getElementById('modal-text').innerHTML = textHTML;
-            document.getElementById('generic-modal').classList.add('active');
-        }
-
+        function showTheoryModal() { openGenericModal('Правило', state.currentTopic.theory); }
+        function showHint() { openGenericModal('Умная подсказка', state.currentTask.hint); }
+        function openGenericModal(title, textHTML) { document.getElementById('modal-title').innerText = title; document.getElementById('modal-text').innerHTML = textHTML; document.getElementById('generic-modal').classList.add('active'); }
         function closeModal() { document.getElementById('generic-modal').classList.remove('active'); }
+        function goToMap(fromGame) { stopTimer(); clearReveal(); loadProgress(); showScreen('map-screen'); }
 
         function endSession(medal) {
-            stopTimer();
-            clearReveal();
-            Logger.send('session_end', { topic: state.currentTopic.id, medal, score: state.score });
+            stopTimer(); clearReveal();
             showScreen('result-screen');
             document.getElementById('ui-medal').innerText = medal === 'gold' ? '🥇' : '🥈';
             document.getElementById('ui-result-title').innerText = medal === 'gold' ? 'Победа!' : 'Тренировка окончена';
             document.getElementById('ui-result-score').innerText = `Правильных ответов: ${state.score}/5`;
-
             fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts, deviceHash: state.deviceHash })
-            }).then(r => r.json()).then(resp => {
-                const el = document.getElementById('ui-result-ach');
-                if (el && resp.newAchievements && resp.newAchievements.length) {
-                    const names = resp.newAchievements.map(k => ACH_CATALOG[k] ? `${ACH_CATALOG[k].icon} ${ACH_CATALOG[k].title}` : k);
-                    el.innerHTML = '🏆 Новые награды: ' + names.join(', ');
-                    state.achievements = (state.achievements || []).concat(resp.newAchievements);
-                }
+                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts })
             });
         }
     </script>
