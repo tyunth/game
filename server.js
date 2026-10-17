@@ -110,14 +110,22 @@ function runAsync(tasks, done) {
 const MIN_DAYS_FOR_SCORE = 1;  // столько дней нужно, чтобы попасть в зачёт
 const TOPICS_COUNT = 3;        // количество доступных тем
 
-// Понедельник текущей недели + сегодня
-function getWeekInfo() {
+// Понедельник выбранной недели + воскресенье + сегодня
+function getWeekInfo(offset = 0) {
     const today = getTodayDate();
     const now = new Date();
+    now.setDate(now.getDate() + (offset * 7));
     const dow = (now.getDay() + 6) % 7; // 0 = понедельник
     const monday = new Date(now);
     monday.setDate(monday.getDate() - dow);
-    return { monday, mondayStr: monday.toISOString().split('T')[0], today };
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+    return { 
+        monday, 
+        mondayStr: monday.toISOString().split('T')[0], 
+        sundayStr: sunday.toISOString().split('T')[0],
+        today 
+    };
 }
 
 // --- ДОСТИЖЕНИЯ (единый справочник) ---
@@ -526,9 +534,10 @@ app.post('/admin/class/add', adminAuth, (req, res) => {
 });
 
 app.get('/admin', adminAuth, (req, res) => {
-    const { monday, mondayStr, today } = getWeekInfo();
+    const offset = parseInt(req.query.weekOffset) || 0;
+    const { monday, mondayStr, sundayStr, today } = getWeekInfo(offset);
 
-    // Собираем все 7 дней недели
+    // Собираем все 7 дней выбранной недели
     const weekDays = [];
     for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
@@ -553,20 +562,17 @@ app.get('/admin', adminAuth, (req, res) => {
         let deviceMap = { byDevice: {}, byStudent: {}, overlaps: [] };
         
         runAsync([
-            // ВАЖНО: Добавили topic_id в выборку
-            next => db.all("SELECT student_id, date, topic_id, medal FROM sessions WHERE date >= ? AND date <= ?",
-                [mondayStr, today], (e, r) => { weekRows = r || []; next(); }),
+            // Выбираем сессии за выбранную неделю ПЛЮС за сегодня (чтобы колонка "Статус сегодня" работала всегда)
+            next => db.all("SELECT student_id, date, topic_id, medal FROM sessions WHERE (date >= ? AND date <= ?) OR date = ?",
+                [mondayStr, sundayStr, today], (e, r) => { weekRows = r || []; next(); }),
             next => db.all("SELECT name, is_test FROM classes ORDER BY name", [], (e, r) => { classRows = r || []; next(); }),
             next => getDeviceSignals(today, m => { deviceMap = m; next(); })
         ], () => {
 
-            // Аггрегируем медали: student_id -> { date -> { topic_id -> 'gold'|'silver' } }
             const weekStats = {};
             weekRows.forEach(r => {
                 const studentStats = weekStats[r.student_id] || (weekStats[r.student_id] = {});
                 const byDay = studentStats[r.date] || (studentStats[r.date] = {});
-                
-                // Если по теме еще нет медали за день или получено золото - сохраняем
                 if (!byDay[r.topic_id] || r.medal === 'gold') {
                     byDay[r.topic_id] = r.medal;
                 }
@@ -581,7 +587,7 @@ app.get('/admin', adminAuth, (req, res) => {
             const totalStudents = rated.length;
             const classOptions = classRows.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
-            const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК' };
+            const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого' };
 
             const style = `<style>
                 body{font-family:sans-serif; padding:20px; color:#333; background:#f9fbfc;}
@@ -603,7 +609,16 @@ app.get('/admin', adminAuth, (req, res) => {
 
             let html = `<meta charset="UTF-8">${style}
                 <h2>Панель учителя</h2>
-                <div style="margin-bottom:16px;"><a href="/admin/devices" style="text-decoration:none; background:#eee; padding:8px 12px; border-radius:8px; color:#333;">📱 Устройства и подозрения</a></div>
+                
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                    <div><a href="/admin/devices" style="text-decoration:none; background:#eee; padding:8px 12px; border-radius:8px; color:#333;">📱 Устройства и подозрения</a></div>
+                    <div style="display:flex; gap:10px; align-items:center; background:#fff; padding:6px 12px; border-radius:8px; border:1px solid #e2e8f0;">
+                        <a href="/admin?weekOffset=${offset - 1}" style="text-decoration:none; font-size:1.2rem;">⬅️</a>
+                        <b style="font-size:1rem;">Неделя с ${mondayStr.slice(8, 10)}.${mondayStr.slice(5, 7)}</b>
+                        ${offset < 0 ? `<a href="/admin?weekOffset=${offset + 1}" style="text-decoration:none; font-size:1.2rem;">➡️</a>` : `<span style="opacity:0.3; font-size:1.2rem;">➡️</span>`}
+                    </div>
+                </div>
+
                 <div class="dashboard">Сегодня сыграло: <b>${playedToday}</b> из <b>${totalStudents}</b> учеников (не считая тестовых)</div>
                 
                 <div class="form-box">
@@ -631,7 +646,7 @@ app.get('/admin', adminAuth, (req, res) => {
                         <th>Статус сегодня</th>
                         <th onclick="sortTable(1, false)">Класс ↕</th>
                         <th onclick="sortTable(2, false)" style="text-align:left;">Ученик ↕</th>
-                        <th>Прогресс за неделю</th>
+                        <th>Прогресс за выбранную неделю</th>
                         <th onclick="sortTable(4, true)" title="Дней подряд">Стрик ↕</th>
                         <th onclick="sortTable(5, true)" title="Всего золота за все время">Золото (Всё) ↕</th>
                         <th onclick="sortTable(6, true)">Сыграно игр ↕</th>
@@ -643,17 +658,18 @@ app.get('/admin', adminAuth, (req, res) => {
             rows.forEach(r => {
                 const byDay = weekStats[r.id] || {};
                 
-                // Статус за сегодня
+                // Статус за сегодня всегда считается по реальному today
                 const todayMedals = Object.values(byDay[today] || {});
                 const status = todayMedals.includes('gold') ? '✅' : (todayMedals.includes('silver') ? '☑️' : '❌');
 
-                // Формируем сворачиваемый блок "Прогресс за неделю"
                 let weekHtml = '';
-                let uniqueGoldsWeek = 0; // Золото за неделю (пошло в командный зачет)
+                let uniqueGoldsWeek = 0;
+                let activeDays = 0;
 
                 weekDays.forEach(dateStr => {
                     const dayData = byDay[dateStr];
-                    if (dayData) {
+                    if (dayData && Object.keys(dayData).length > 0) {
+                        activeDays++;
                         let dayItems = [];
                         for (const [topic, medal] of Object.entries(dayData)) {
                             if (medal === 'gold') uniqueGoldsWeek++;
@@ -664,10 +680,11 @@ app.get('/admin', adminAuth, (req, res) => {
                     }
                 });
 
-                // HTML ячейки недели
+                const grade10 = activeDays >= 5 ? '<span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px; font-size:0.85rem; margin-left:6px;">Оценка: 10</span>' : '';
+
                 const weekCell = weekHtml
                     ? `<details>
-                         <summary>В зачёт: ${uniqueGoldsWeek} 🥇</summary>
+                         <summary>В зачёт: ${uniqueGoldsWeek} 🥇 ${grade10}</summary>
                          <div class="day-details">${weekHtml}</div>
                        </details>`
                     : `<span style="color:#aaa; font-size:0.85rem;">Нет активности</span>`;
@@ -774,7 +791,6 @@ app.get('/admin', adminAuth, (req, res) => {
         });
     });
 });
-
 // Страница устройств: кто с одного телефона занимался
 app.get('/admin/devices', adminAuth, (req, res) => {
     const today = getTodayDate();
