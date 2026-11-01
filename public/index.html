@@ -110,25 +110,34 @@
             <div id="team-rows"></div>
         </div>
 
-        <div class="map-container">
+<div class="map-container">
+            
+            <!-- АРХИВ СТАРЫХ ТЕМ -->
+            <details style="width: 100%; text-align: center; margin-bottom: 20px;">
+                <summary style="display: inline-block; background: white; color: var(--primary); font-weight: bold; padding: 10px 20px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; list-style: none;">📦 Пройденный материал (НОД, НОК)</summary>
+                
+                <div style="padding-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 46px;">
+                    <div class="map-level">
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-factor" onclick="selectTopic('factor')">Разложение на простые множители</div>
+                            <div class="topic-streak-badge" id="streak-factor">🔥 0</div>
+                        </div>
+                    </div>
+                    <div class="map-level row2">
+                        <div class="topic-wrapper">
+                            <div class="topic-node" id="node-nod" onclick="selectTopic('nod')">НОД</div>
+                            <div class="topic-streak-badge" id="streak-nod">🔥 0</div>
+                        </div>
+                        <div class="topic-wrapper">
+                            <div class="topic-node" id="node-nok" onclick="selectTopic('nok')">НОК</div>
+                            <div class="topic-streak-badge" id="streak-nok">🔥 0</div>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <!-- АКТУАЛЬНЫЕ ТЕМЫ: ДРОБИ -->
             <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-factor" onclick="selectTopic('factor')">Разложение на простые множители</div>
-                    <div class="topic-streak-badge" id="streak-factor">🔥 0</div>
-                </div>
-            </div>
-            <div class="map-level row2">
-                <div class="topic-wrapper">
-                    <div class="topic-node" id="node-nod" onclick="selectTopic('nod')">НОД</div>
-                    <div class="topic-streak-badge" id="streak-nod">🔥 0</div>
-                </div>
-                <div class="topic-wrapper">
-                    <div class="topic-node" id="node-nok" onclick="selectTopic('nok')">НОК</div>
-                    <div class="topic-streak-badge" id="streak-nok">🔥 0</div>
-                </div>
-            </div>
-            <!-- НОВЫЕ ТЕМЫ: ДРОБИ -->
-            <div class="map-level" style="margin-top: 20px;">
                 <div class="topic-wrapper">
                     <div class="topic-node oval" id="node-fraction_basics" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_basics')">Дроби: Основы</div>
                     <div class="topic-streak-badge" id="streak-fraction_basics">🔥 0</div>
@@ -144,6 +153,18 @@
                 <div class="topic-wrapper">
                     <div class="topic-node oval" id="node-improper_to_mixed" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('improper_to_mixed')">Выделение целого</div>
                     <div class="topic-streak-badge" id="streak-improper_to_mixed">🔥 0</div>
+                </div>
+            </div>
+            <div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_equiv" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_equiv')">Новый знаменатель</div>
+                    <div class="topic-streak-badge" id="streak-fraction_equiv">🔥 0</div>
+                </div>
+            </div>
+            <div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_compare')">Сравнение дробей</div>
+                    <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
                 </div>
             </div>
         </div>
@@ -518,7 +539,7 @@
                         hint: `Раздели ${num} на ${den}. Сколько получится полных целых? Запиши целое. Затем посчитай остаток.`
                     };
                 }
-            }
+            },
 			'fraction_equiv': {
                 id: 'fraction_equiv', theory: '<b>Основное свойство дроби:</b> если числитель и знаменатель умножить или разделить на одно и то же число, получится равная ей дробь.<br><br><b>Пример:</b> 1/2 = ?/6. Знаменатель увеличился в 3 раза (6 : 2 = 3). Значит, и числитель нужно умножить на 3. 1 × 3 = 3. Ответ: 3/6.',
                 generate: () => {
@@ -583,18 +604,7 @@
                 }
             }
 			};
-			<div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_equiv" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_equiv')">Новый знаменатель</div>
-                    <div class="topic-streak-badge" id="streak-fraction_equiv">🔥 0</div>
-                </div>
-            </div>
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_compare')">Сравнение дробей</div>
-                    <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
-                </div>
-            </div>
+
         
 
 		function selectTopic(id) {

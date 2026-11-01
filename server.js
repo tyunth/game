@@ -856,7 +856,7 @@ app.get('/admin/logs/:studentId', adminAuth, (req, res) => {
             const trClass = isSuspicious ? 'class="cheat"' : '';
             
             html += `<tr ${trClass}>
-                <td>${new Date(r.created_at).toLocaleTimeString('ru-RU')}</td>
+                <td>${new Date(r.created_at).toLocaleString('ru-RU')}</td>
                 <td>${r.action} ${details.correct ? '✅' : (details.correct === false ? '❌' : '')}</td>
                 <td>${details.timeSec !== undefined ? details.timeSec + ' сек' : '-'} ${isSuspicious ? '🚩' : ''}</td>
                 <td>${details.input || '-'}</td>
