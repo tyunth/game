@@ -193,6 +193,11 @@
             <button onclick="appendFactor(41)">41</button><button onclick="appendFactor(43)">43</button><button onclick="appendFactor(47)">47</button><button style="background: #f0f0f0;" onclick="clearAnswer()">C</button>
             <button style="grid-column: span 4; background: var(--success); color: white;" onclick="checkFactorAnswer()">Готово</button>
         </div>
+		<div id="keyboard-compare" class="numpad" style="display: none; grid-template-columns: repeat(3, 1fr);">
+            <button style="font-size: 2rem;" onclick="submitCompare('<')">&lt;</button>
+            <button style="font-size: 2rem;" onclick="submitCompare('=')">=</button>
+            <button style="font-size: 2rem;" onclick="submitCompare('>')">&gt;</button>
+        </div>
     </div>
 
     <!-- РЕЗУЛЬТАТ -->
@@ -276,7 +281,7 @@
                 if (streakEl) streakEl.innerText = `🔥 ${data.streak ?? 0}`;
                 state.achievements = data.achievements;
                 
-                ['factor', 'nod', 'nok', 'fraction_basics', 'mixed_to_improper', 'improper_to_mixed'].forEach(topic => {
+                ['factor', 'nod', 'nok', 'fraction_basics', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare'].forEach(topic => {
                     const badge = document.getElementById(`streak-${topic}`);
                     if (badge) badge.innerText = `🔥 ${data.topicStreaks[topic] || 0}`;
                 });
@@ -514,18 +519,94 @@
                     };
                 }
             }
+			'fraction_equiv': {
+                id: 'fraction_equiv', theory: '<b>Основное свойство дроби:</b> если числитель и знаменатель умножить или разделить на одно и то же число, получится равная ей дробь.<br><br><b>Пример:</b> 1/2 = ?/6. Знаменатель увеличился в 3 раза (6 : 2 = 3). Значит, и числитель нужно умножить на 3. 1 × 3 = 3. Ответ: 3/6.',
+                generate: () => {
+                    const den1 = randomInt(2, 9);
+                    const num1 = randomInt(1, den1 - 1);
+                    const mult = randomInt(2, 6);
+                    const den2 = den1 * mult;
+                    const answer = num1 * mult;
+                    return {
+                        type: 'fraction_equiv',
+                        text: `Приведи к новому знаменателю:`,
+                        html: `<div class="frac-block">
+                                  <span class="frac-part"><span class="frac-num">${num1}</span><span class="frac-den">${den1}</span></span>
+                                  <span style="margin:0 10px;">=</span>
+                                  <div class="input-frac">
+                                      <div class="input-num input-active" id="inp-equiv-num">?</div>
+                                      <div class="input-den">${den2}</div>
+                                  </div>
+                               </div>`,
+                        answer: answer,
+                        hint: `Во сколько раз ${den2} больше, чем ${den1}? Умножь числитель ${num1} на это же число.`
+                    };
+                }
+            },
+            'fraction_compare': {
+                id: 'fraction_compare', theory: '<b>Как сравнить дроби?</b><br><br>1. С одинаковыми знаменателями: больше та, у которой числитель больше.<br>2. С разными: приведи к общему знаменателю.<br>3. Смешанные числа: сначала сравниваем целые части. Если они равны — сравниваем дробные.',
+                generate: () => {
+                    const isMixed = Math.random() > 0.5;
+                    let leftVal, rightVal, htmlLeft, htmlRight;
+                    
+                    if (isMixed) {
+                        const whole1 = randomInt(1, 4), whole2 = randomInt(1, 4);
+                        const den = randomInt(3, 8);
+                        const num1 = randomInt(1, den - 1), num2 = randomInt(1, den - 1);
+                        leftVal = whole1 + num1/den; rightVal = whole2 + num2/den;
+                        htmlLeft = `<span class="frac-whole">${whole1}</span><span class="frac-part"><span class="frac-num">${num1}</span><span class="frac-den">${den}</span></span>`;
+                        htmlRight = `<span class="frac-whole">${whole2}</span><span class="frac-part"><span class="frac-num">${num2}</span><span class="frac-den">${den}</span></span>`;
+                    } else {
+                        const den1 = randomInt(2, 5), num1 = randomInt(1, den1 - 1);
+                        const mult = randomInt(2, 4);
+                        const den2 = den1 * mult, num2 = randomInt(1, den2 - 1);
+                        leftVal = num1/den1; rightVal = num2/den2;
+                        htmlLeft = `<span class="frac-part"><span class="frac-num">${num1}</span><span class="frac-den">${den1}</span></span>`;
+                        htmlRight = `<span class="frac-part"><span class="frac-num">${num2}</span><span class="frac-den">${den2}</span></span>`;
+                    }
+
+                    let ans = '=';
+                    if (leftVal < rightVal) ans = '<';
+                    if (leftVal > rightVal) ans = '>';
+
+                    return {
+                        type: 'fraction_compare',
+                        text: `Сравни числа:`,
+                        html: `<div class="frac-block" style="gap:15px; font-size: 2.5rem;">
+                                  ${htmlLeft}
+                                  <div class="input-active" style="width:50px; height:50px; display:flex; align-items:center; justify-content:center; border:2px dashed var(--primary); border-radius:8px; font-size:2rem; background:#eff6ff;" id="inp-compare">?</div>
+                                  ${htmlRight}
+                               </div>`,
+                        answer: ans,
+                        hint: `Сравни целые части, а если их нет или они равны — приведи дроби к общему знаменателю.`
+                    };
+                }
+            }
+			<div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_equiv" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_equiv')">Новый знаменатель</div>
+                    <div class="topic-streak-badge" id="streak-fraction_equiv">🔥 0</div>
+                </div>
+            </div>
+            <div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="selectTopic('fraction_compare')">Сравнение дробей</div>
+                    <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
+                </div>
+            </div>
         };
 
-        function selectTopic(id) {
+function selectTopic(id) {
             state.currentTopic = TOPICS[id];
             state.hearts = 3; state.score = 0; state.hintsUsed = 0;
             updateHearts(); document.getElementById('ui-score').innerText = '0/5';
             
-            // Скрываем все клавиатуры по умолчанию
             document.getElementById('keyboard-standard').style.display = 'none';
             document.getElementById('keyboard-prime').style.display = 'none';
+            document.getElementById('keyboard-compare').style.display = 'none';
             
             if (id === 'factor') document.getElementById('keyboard-prime').style.display = 'grid';
+            else if (id === 'fraction_compare') document.getElementById('keyboard-compare').style.display = 'grid';
             else document.getElementById('keyboard-standard').style.display = 'grid';
             
             showScreen('game-screen');
@@ -533,7 +614,7 @@
             nextTask();
         }
 
-function nextTask() {
+        function nextTask() {
             state.currentInput = ''; state.currentFactors = []; state.startTime = Date.now();
             state.mistakes = 0; state.locked = false;
             
@@ -545,32 +626,34 @@ function nextTask() {
             state.currentTask = generateTask(state.currentTopic.id);
             document.getElementById('ui-task').innerHTML = state.currentTask.text;
 
-            // Восстанавливаем нужную клавиатуру перед каждым заданием
+            document.getElementById('keyboard-prime').style.display = 'none';
+            document.getElementById('keyboard-standard').style.display = 'none';
+            document.getElementById('keyboard-compare').style.display = 'none';
+
             if (state.currentTopic.id === 'factor') {
                 document.getElementById('keyboard-prime').style.display = 'grid';
-                document.getElementById('keyboard-standard').style.display = 'none';
+            } else if (state.currentTopic.id === 'fraction_compare') {
+                document.getElementById('keyboard-compare').style.display = 'grid';
             } else {
                 document.getElementById('keyboard-standard').style.display = 'grid';
-                document.getElementById('keyboard-prime').style.display = 'none';
             }
 
-            // Рендер UI в зависимости от типа задачи
             const t = state.currentTask;
             if (t.type === 'fraction_constructor') {
                 svgCont.innerHTML = t.svg;
-                document.getElementById('keyboard-standard').style.display = 'none'; // Скрываем только для конструктора
+                document.getElementById('keyboard-standard').style.display = 'none'; 
                 ansCont.innerHTML = `<button class="btn" style="margin-top:10px; width:150px;" onclick="checkAnswer()">Готово</button>`;
             } 
             else if (t.type === 'fraction_read') {
                 svgCont.innerHTML = t.svg;
-                state.inputFocus = 'num'; // 'num' или 'den'
+                state.inputFocus = 'num'; 
                 ansCont.innerHTML = `
                     <div class="input-frac">
                         <div class="input-num input-active" id="inp-read-num" onclick="setFocus('num')">?</div>
                         <div class="input-den" id="inp-read-den" onclick="setFocus('den')">?</div>
                     </div>`;
             }
-            else if (t.type === 'mixed_to_improper' || t.type === 'improper_to_mixed') {
+            else if (t.type === 'mixed_to_improper' || t.type === 'improper_to_mixed' || t.type === 'fraction_equiv' || t.type === 'fraction_compare') {
                 ansCont.innerHTML = t.html;
             }
             else {
@@ -621,6 +704,10 @@ function nextTask() {
                 if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = state.currentInput;
                 else document.getElementById('inp-mixed-rem').innerText = state.currentInput;
             }
+			else if (t.type === 'fraction_equiv') {
+                if(state.currentInput.length < 3) state.currentInput += num;
+                document.getElementById('inp-equiv-num').innerText = state.currentInput;
+            }
             else {
                 if (state.currentInput.length < 5) state.currentInput += num; 
                 updateDisplay(); 
@@ -641,6 +728,8 @@ function nextTask() {
             } else if (t.type === 'improper_to_mixed') {
                 if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = '?';
                 else document.getElementById('inp-mixed-rem').innerText = '?';
+			} else if (t.type === 'fraction_equiv') {
+                document.getElementById('inp-equiv-num').innerText = '?';
             } else {
                 state.currentFactors = []; updateDisplay(); 
             }
@@ -691,6 +780,10 @@ function nextTask() {
                     else { isCorrect = false; }
                 }
             }
+			else if (t.type === 'fraction_equiv') {
+                if (!val) return;
+                isCorrect = (parseInt(val) === t.answer);
+            }
             else {
                 if (!val) return;
                 isCorrect = (parseInt(val) === t.answer);
@@ -706,6 +799,16 @@ function nextTask() {
             const trueAns = [...state.currentTask.factors].sort((a, b) => a - b).join(',');
             handleResult(userAns === trueAns, userAns);
         }
+		
+		function submitCompare(val) {
+            if (state.locked) return;
+            const t = state.currentTask;
+            if (t.type !== 'fraction_compare') return;
+            
+            document.getElementById('inp-compare').innerText = val;
+            const isCorrect = (val === t.answer);
+            handleResult(isCorrect, val);
+        }
 
         function handleResult(isCorrect, val) {
             if (isCorrect) {
@@ -720,9 +823,11 @@ function nextTask() {
 
             // Тряска элемента с ошибкой
             const t = state.currentTask;
-            let errEl = document.getElementById('ui-answer');
+			let errEl = document.getElementById('ui-answer');
             if (t.type === 'mixed_to_improper') errEl = document.getElementById('inp-improper-num');
             if (t.type === 'improper_to_mixed') errEl = (t.step === 1) ? document.getElementById('inp-mixed-whole') : document.getElementById('inp-mixed-rem');
+            if (t.type === 'fraction_equiv') errEl = document.getElementById('inp-equiv-num');
+            if (t.type === 'fraction_compare') errEl = document.getElementById('inp-compare');
             
             errEl.classList.add('error-shake');
             document.getElementById('ui-retry').innerText = 'Попробуй ещё раз';
@@ -754,6 +859,13 @@ function nextTask() {
                 document.getElementById('inp-mixed-rem').style.opacity = '1';
                 document.getElementById('inp-mixed-whole').classList.add('correct');
                 document.getElementById('inp-mixed-rem').classList.add('correct');
+			} else if (t.type === 'fraction_equiv') {
+                document.getElementById('inp-equiv-num').innerText = t.answer;
+                document.getElementById('inp-equiv-num').classList.add('correct');
+            } else if (t.type === 'fraction_compare') {
+                document.getElementById('inp-compare').innerText = t.answer;
+                document.getElementById('inp-compare').classList.add('correct');
+                document.getElementById('inp-compare').style.borderColor = 'var(--success)';
             } else {
                 const d = document.getElementById('ui-answer');
                 d.classList.add('correct');
