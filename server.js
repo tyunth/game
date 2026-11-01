@@ -133,7 +133,8 @@ function getWeekInfo(offset = 0) {
 
 // --- ДОСТИЖЕНИЯ (единый справочник) ---
 const ACHIEVEMENTS = {
-    first_gold:    { icon: '🥇', title: 'Золотой старт',   desc: 'Получить первую золотую медаль.' },
+    socializer:    { icon: '🤝', title: 'Связной',         desc: 'Разбудить одноклассника по ссылке.' },
+	first_gold:    { icon: '🥇', title: 'Золотой старт',   desc: 'Получить первую золотую медаль.' },
     flawless:      { icon: '🛡️', title: 'Ни царапины',      desc: 'Золото без единой ошибки и без подсказок.' },
     on_edge:       { icon: '😰', title: 'На волоске',       desc: 'Золото, совершив две ошибки (осталось одно сердечко).' },
     universal:     { icon: '🎓', title: 'Универсал',        desc: 'Золото по всем трём темам за один день.' },
@@ -892,6 +893,53 @@ app.get('/admin/logs/:studentId', adminAuth, (req, res) => {
         });
         res.send(html + `</table>`);
     });
+});
+
+// --- ПУБЛИЧНАЯ СТАТИСТИКА ТЕМ ---
+app.get('/api/topic-stats', (req, res) => {
+    db.all(`SELECT topic_id, COUNT(*) as total, SUM(CASE WHEN medal='gold' THEN 1 ELSE 0 END) as golds, AVG(score) as avg_score
+            FROM sessions GROUP BY topic_id`, [], (err, rows) => {
+        const stats = {};
+        if (rows) rows.forEach(r => stats[r.topic_id] = {
+            winrate: Math.round((r.golds / r.total) * 100) || 0,
+            avgScore: (r.avg_score || 0).toFixed(1)
+        });
+        res.json(stats);
+    });
+});
+
+// --- ПОЗОВИ ДРУГА: Список спящих ---
+app.get('/api/sleeping-friends/:studentId', (req, res) => {
+    db.get("SELECT class_name FROM students WHERE id = ?", [req.params.studentId], (err, me) => {
+        if (!me || !me.class_name) return res.json([]);
+        const today = getTodayDate();
+        const yesterday = getYesterdayDate();
+        // Ищем одноклассников, которые не играли ни сегодня, ни вчера
+        db.all("SELECT id, name FROM students WHERE class_name = ? AND id != ? AND (last_played_date IS NULL OR (last_played_date != ? AND last_played_date != ?))",
+            [me.class_name, req.params.studentId, today, yesterday], (err, rows) => {
+            res.json(rows || []);
+        });
+    });
+});
+
+// --- ПОЗОВИ ДРУГА: Начисление бонуса ---
+app.post('/api/claim-ping', (req, res) => {
+    const { fromId, toId } = req.body;
+    if (!fromId || !toId || fromId === toId) return res.json({ success: false });
+
+    const grantBonus = (id) => {
+        db.get("SELECT xp, achievements FROM students WHERE id = ?", [id], (err, s) => {
+            if (!s) return;
+            const achs = JSON.parse(s.achievements || '[]');
+            let newXp = (s.xp || 0) + 50; // Даем по 50 XP обоим
+            if (!achs.includes('socializer')) achs.push('socializer');
+            db.run("UPDATE students SET xp = ?, achievements = ? WHERE id = ?", [newXp, JSON.stringify(achs), id]);
+        });
+    };
+    
+    grantBonus(fromId);
+    grantBonus(toId);
+    res.json({ success: true, message: 'Вы с другом получили по +50 XP и новую награду за возвращение в игру!' });
 });
 
 app.listen(PORT, () => console.log('Сервер: http://localhost:' + PORT));
