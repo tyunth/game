@@ -241,6 +241,7 @@ app.get('/api/team-standings', (req, res) => {
 });
 
 // НОВЫЙ РОУТ ДЛЯ ПРОГРЕССА
+
 app.get('/api/student-progress/:id', (req, res) => {
     const studentId = req.params.id;
     const today = getTodayDate();
@@ -255,17 +256,15 @@ app.get('/api/student-progress/:id', (req, res) => {
                 const streaksDict = {};
                 topicStreaks.forEach(ts => streaksDict[ts.topic_id] = ts.streak);
 
+                // Один правильный ответ клиенту со всеми данными
                 res.json({
                     streak: student.streak || 0,
+                    xp: student.xp || 0,
                     achievements: JSON.parse(student.achievements || '[]'),
                     todayTopics: sessions.map(s => ({ topic: s.topic_id, medal: s.medal })),
                     topicStreaks: streaksDict
                 });
-				res.json({
-				streak: student.streak || 0,
-				xp: student.xp || 0, // <--- ДОБАВИТЬ ЭТУ СТРОКУ
-				achievements: JSON.parse(student.achievements || '[]'),
-				});
+            });
         });
     });
 });
