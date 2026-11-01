@@ -597,7 +597,7 @@
             </div>
         
 
-function selectTopic(id) {
+		function selectTopic(id) {
             state.currentTopic = TOPICS[id];
             state.hearts = 3; state.score = 0; state.hintsUsed = 0;
             updateHearts(); document.getElementById('ui-score').innerText = '0/5';
