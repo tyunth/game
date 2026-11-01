@@ -47,20 +47,23 @@ db.serialize(() => {
         last_played_date TEXT,
         PRIMARY KEY (student_id, topic_id)
     )`);
-
+	
     // Справочник классов (нужен, чтобы помечать целый класс как тестовый)
     db.run(`CREATE TABLE IF NOT EXISTS classes (
         name TEXT PRIMARY KEY,
         is_test INTEGER DEFAULT 0
     )`);
-
+	
     // Флаг «тестовый» у ученика. ALTER выполняем, только если колонки ещё нет.
     db.all("PRAGMA table_info(students)", (e, cols) => {
         if (!cols.some(c => c.name === 'is_test')) {
             db.run("ALTER TABLE students ADD COLUMN is_test INTEGER DEFAULT 0");
         }
     });
-
+	db.all("PRAGMA table_info(students)", (e, cols) => {
+        if (!cols.some(c => c.name === 'is_test')) db.run("ALTER TABLE students ADD COLUMN is_test INTEGER DEFAULT 0");
+        if (!cols.some(c => c.name === 'xp')) db.run("ALTER TABLE students ADD COLUMN xp INTEGER DEFAULT 0");
+    });
     // Заполняем справочник классов текущими значениями
     db.run("INSERT OR IGNORE INTO classes (name) SELECT DISTINCT class_name FROM students WHERE class_name IS NOT NULL AND class_name != ''");
 
@@ -242,7 +245,7 @@ app.get('/api/student-progress/:id', (req, res) => {
     const studentId = req.params.id;
     const today = getTodayDate();
 
-    db.get("SELECT achievements, streak FROM students WHERE id = ?", [studentId], (err, student) => {
+    db.get("SELECT achievements, streak, xp FROM students WHERE id = ?", [studentId], (err, student) => {
         if (err || !student) return res.status(404).json({ error: 'Ученик не найден' });
 
         db.all("SELECT topic_id, medal FROM sessions WHERE student_id = ? AND date = ?", [studentId, today], (err, sessions) => {
@@ -258,7 +261,11 @@ app.get('/api/student-progress/:id', (req, res) => {
                     todayTopics: sessions.map(s => ({ topic: s.topic_id, medal: s.medal })),
                     topicStreaks: streaksDict
                 });
-            });
+				res.json({
+				streak: student.streak || 0,
+				xp: student.xp || 0, // <--- ДОБАВИТЬ ЭТУ СТРОКУ
+				achievements: JSON.parse(student.achievements || '[]'),
+				});
         });
     });
 });
@@ -270,7 +277,7 @@ app.post('/api/save-result', (req, res) => {
     const hints = hintsUsed || 0;
     const heartsLeft = (typeof hearts === 'number') ? hearts : 3;
 
-    db.get("SELECT streak, last_played_date, achievements FROM students WHERE id = ?", [studentId], (err, student) => {
+    db.get("SELECT streak, last_played_date, achievements, xp FROM students WHERE id = ?", [studentId], (err, student) => {
         if (err || !student) return res.status(404).json({ error: 'Ученик не найден' });
 
         let newStreak = student.streak;
@@ -278,36 +285,58 @@ app.post('/api/save-result', (req, res) => {
             newStreak = (student.last_played_date === yesterday) ? student.streak + 1 : 1;
         }
 
+        const currentXp = student.xp || 0;
         const owned = JSON.parse(student.achievements || '[]');
 
-        // 1) Сохраняем сессию
-        db.run("INSERT INTO sessions (student_id, topic_id, date, medal, score, hints_used, device_hash) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [studentId, topicId, today, medal, score, hints, deviceHash || null], () => {
+        // Считаем, сколько раз сегодня ученик уже прошел ЭТУ тему на золото
+        db.get("SELECT COUNT(*) as count FROM sessions WHERE student_id = ? AND topic_id = ? AND date = ? AND medal = 'gold'", 
+        [studentId, topicId, today], (err, rowCount) => {
+            
+            const winsToday = rowCount ? rowCount.count : 0;
+            let earnedXp = 0;
+            
+            // Логика убывающего фарма (кап)
+            if (medal === 'gold') {
+                if (winsToday === 0) earnedXp = 100;
+                else if (winsToday === 1) earnedXp = 50;
+                else earnedXp = 10;
+            } else {
+                earnedXp = 15; // За тренировку без победы даем утешительные крохи
+            }
+            
+            const newXp = currentXp + earnedXp;
 
-            // 2) Обновляем стрик по конкретной теме (уровню)
-            db.get("SELECT streak, last_played_date FROM topic_progress WHERE student_id = ? AND topic_id = ?",
-                [studentId, topicId], (err2, tp) => {
-                let topicStreak = 1;
-                if (tp) {
-                    if (tp.last_played_date === today) topicStreak = tp.streak;
-                    else if (tp.last_played_date === yesterday) topicStreak = tp.streak + 1;
-                }
-                db.run("INSERT OR REPLACE INTO topic_progress (student_id, topic_id, streak, last_played_date) VALUES (?, ?, ?, ?)",
-                    [studentId, topicId, topicStreak, today], () => {
-                    if (deviceHash) db.run("UPDATE student_devices SET sessions = sessions + 1, last_seen = ? WHERE student_id = ? AND device_hash = ?", [today, studentId, deviceHash]);
+            // 1) Сохраняем сессию
+            db.run("INSERT INTO sessions (student_id, topic_id, date, medal, score, hints_used, device_hash) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [studentId, topicId, today, medal, score, hints, deviceHash || null], () => {
 
-                    // 3) Данные для достижений (считаем параллельно)
-                    const ctx = { medal, hints, heartsLeft, topicStreak, newStreak, games: 0, goldTopicsToday: 0, triedCalculator: false };
-                    runAsync([
-                        next => db.get("SELECT COUNT(*) AS c FROM sessions WHERE student_id = ?", [studentId], (e, r) => { ctx.games = r.c || 0; next(); }),
-                        next => db.get("SELECT COUNT(DISTINCT topic_id) AS c FROM sessions WHERE student_id = ? AND date = ? AND medal = 'gold'", [studentId, today], (e, r) => { ctx.goldTopicsToday = r.c || 0; next(); }),
-                        next => db.get("SELECT COUNT(*) AS c FROM logs WHERE student_id = ? AND action = 'open_calculator'", [studentId], (e, r) => { ctx.triedCalculator = (r.c || 0) > 0; next(); })
-                    ], () => {
-                        const newlyUnlocked = evaluateAchievements(ctx, owned);
-                        const all = owned.concat(newlyUnlocked);
-                        db.run("UPDATE students SET streak = ?, last_played_date = ?, achievements = ? WHERE id = ?",
-                            [newStreak, today, JSON.stringify(all), studentId], () => {
-                            res.json({ success: true, newAchievements: newlyUnlocked });
+                // 2) Обновляем стрик по теме
+                db.get("SELECT streak, last_played_date FROM topic_progress WHERE student_id = ? AND topic_id = ?",
+                    [studentId, topicId], (err2, tp) => {
+                    let topicStreak = 1;
+                    if (tp) {
+                        if (tp.last_played_date === today) topicStreak = tp.streak;
+                        else if (tp.last_played_date === yesterday) topicStreak = tp.streak + 1;
+                    }
+                    db.run("INSERT OR REPLACE INTO topic_progress (student_id, topic_id, streak, last_played_date) VALUES (?, ?, ?, ?)",
+                        [studentId, topicId, topicStreak, today], () => {
+                        
+                        if (deviceHash) db.run("UPDATE student_devices SET sessions = sessions + 1, last_seen = ? WHERE student_id = ? AND device_hash = ?", [today, studentId, deviceHash]);
+
+                        // 3) Достижения и сохранение XP
+                        const ctx = { medal, hints, heartsLeft, topicStreak, newStreak, games: 0, goldTopicsToday: 0, triedCalculator: false };
+                        runAsync([
+                            next => db.get("SELECT COUNT(*) AS c FROM sessions WHERE student_id = ?", [studentId], (e, r) => { ctx.games = r.c || 0; next(); }),
+                            next => db.get("SELECT COUNT(DISTINCT topic_id) AS c FROM sessions WHERE student_id = ? AND date = ? AND medal = 'gold'", [studentId, today], (e, r) => { ctx.goldTopicsToday = r.c || 0; next(); }),
+                            next => db.get("SELECT COUNT(*) AS c FROM logs WHERE student_id = ? AND action = 'open_calculator'", [studentId], (e, r) => { ctx.triedCalculator = (r.c || 0) > 0; next(); })
+                        ], () => {
+                            const newlyUnlocked = evaluateAchievements(ctx, owned);
+                            const all = owned.concat(newlyUnlocked);
+                            
+                            db.run("UPDATE students SET streak = ?, last_played_date = ?, achievements = ?, xp = ? WHERE id = ?",
+                                [newStreak, today, JSON.stringify(all), newXp, studentId], () => {
+                                res.json({ success: true, newAchievements: newlyUnlocked, earnedXp, newXp });
+                            });
                         });
                     });
                 });

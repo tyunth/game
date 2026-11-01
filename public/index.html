@@ -96,9 +96,12 @@
 
     <!-- КАРТА ТЕМ -->
     <div id="map-screen" class="screen">
-        <div class="top-nav">
+		<div class="top-nav">
             <button class="btn-exit" onclick="logout()">↩️</button>
-            <div id="ui-streak" style="font-weight:bold; color:#d35400; font-size:1.1rem;">🔥 0</div>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div id="ui-level" style="font-weight:bold; color:var(--primary); font-size:1.1rem;" title="Твой уровень">⭐ 1</div>
+                <div id="ui-streak" style="font-weight:bold; color:#d35400; font-size:1.1rem;" title="Дней подряд">🔥 0</div>
+            </div>
             <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆 Награды</button>
         </div>
         
@@ -226,6 +229,7 @@
         <div id="ui-medal" style="font-size:5rem; margin-top:40px;">🥇</div>
         <div id="ui-result-title" style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;"></div>
         <div id="ui-result-score" style="color:var(--muted); margin-bottom:30px;"></div>
+		<div id="ui-result-xp" style="color:var(--primary); font-weight:bold; font-size:1.3rem; margin-bottom:20px;"></div>
         <div id="ui-result-ach" style="color:var(--success); font-weight:bold; margin-bottom:20px;"></div>
         <button class="btn" onclick="selectTopic(state.currentTopic.id)">🔁 Ещё раз</button>
         <button class="btn" style="margin-top:10px; background:#95a5a6;" onclick="goToMap()">🏠 На карту</button>
@@ -295,11 +299,20 @@
         }
 
         function logout() { localStorage.removeItem('studentId'); state.studentId = null; showScreen('login-screen'); }
-
+		
+		// Формула: Уровень = корень из (XP / 100) + 1. 
+        // 1 ур: 0 XP, 2 ур: 100 XP, 3 ур: 400 XP, 4 ур: 900 XP. Идеальная кривая для долгих достижений.
+        function calcLevel(xp) {
+            const lvl = Math.floor(Math.sqrt((xp || 0) / 100)) + 1;
+            return lvl;
+        }
+		
         function loadProgress() {
             fetch(`/api/student-progress/${state.studentId}`).then(res => res.json()).then(data => {
                 const streakEl = document.getElementById('ui-streak');
                 if (streakEl) streakEl.innerText = `🔥 ${data.streak ?? 0}`;
+                const lvlEl = document.getElementById('ui-level');
+                if (lvlEl) lvlEl.innerText = `⭐ ${calcLevel(data.xp)}`;
                 state.achievements = data.achievements;
                 
                 ['factor', 'nod', 'nok', 'fraction_basics', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare'].forEach(topic => {
@@ -968,12 +981,18 @@
             const achEl = document.getElementById('ui-result-ach');
             if (achEl) achEl.innerHTML = '';
 
-            fetch('/api/save-result', {
+			fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                // Добавлен deviceHash для серверного античита
                 body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts, deviceHash: state.deviceHash })
             }).then(r => r.json()).then(resp => {
-                // Восстановлен показ новых ачивок
+                
+                // --- Анимация начисления XP ---
+                if (resp.earnedXp !== undefined) {
+                    const xpMsg = resp.earnedXp === 100 ? `+${resp.earnedXp} XP (Супер!)` : `+${resp.earnedXp} XP`;
+                    document.getElementById('ui-result-xp').innerText = xpMsg;
+                    document.getElementById('ui-level').innerText = `⭐ ${calcLevel(resp.newXp)}`;
+                }
+
                 if (achEl && resp.newAchievements && resp.newAchievements.length) {
                     const names = resp.newAchievements.map(k => ACH_CATALOG[k] ? `${ACH_CATALOG[k].icon} ${ACH_CATALOG[k].title}` : k);
                     achEl.innerHTML = '🏆 Новые награды: ' + names.join(', ');
