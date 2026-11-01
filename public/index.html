@@ -98,11 +98,19 @@
     <div id="map-screen" class="screen">
 		<div class="top-nav">
             <button class="btn-exit" onclick="logout()">↩️</button>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <div id="ui-level" style="font-weight:bold; color:var(--primary); font-size:1.1rem;" title="Твой уровень">⭐ 1</div>
-                <div id="ui-streak" style="font-weight:bold; color:#d35400; font-size:1.1rem;" title="Дней подряд">🔥 0</div>
+            
+            <div style="flex:1; margin: 0 15px; display:flex; flex-direction:column; gap:4px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <div id="ui-level" style="font-weight:bold; color:var(--primary); font-size:1.1rem;">⭐ 1</div>
+                    <div id="ui-xp-text" style="font-size:0.75rem; color:var(--muted);">0 / 100 XP</div>
+                </div>
+                <div style="width:100%; height:8px; background:#e2e8f0; border-radius:4px; overflow:hidden;">
+                    <div id="ui-xp-bar" style="width:0%; height:100%; background:var(--success); transition:width 0.5s ease-out;"></div>
+                </div>
             </div>
-            <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆 Награды</button>
+
+            <div id="ui-streak" style="font-weight:bold; color:#d35400; font-size:1.1rem; margin-right: 15px;" title="Дней подряд">🔥 0</div>
+            <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆</button>
         </div>
         
 		<div class="team-panel">
@@ -370,13 +378,21 @@ function login() {
                     document.getElementById('ping-list').innerHTML = 'Все твои одноклассники уже в игре! 🔥';
                     return;
                 }
-                const baseUrl = window.location.href.split('?')[0];
+				const baseUrl = window.location.href.split('?')[0];
                 document.getElementById('ping-list').innerHTML = friends.map(f => {
                     const link = `${baseUrl}?ping=${state.studentId}`;
-                    const msg = `Эй, ${f.name}! Заходи в игру, нам нужны очки класса! ${link}`;
+                    const msgText = `Эй, ${f.name}! Заходи в игру, нам нужны очки класса!`;
+                    
+                    const tgLink = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(msgText)}`;
+                    const waLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(msgText + ' ' + link)}`;
+
                     return `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; padding:8px; background:#f4f7f9; border-radius:8px;">
-                        <span style="font-weight:bold;">${f.name}</span>
-                        <button style="padding:6px 12px; border:none; background:var(--primary); color:white; border-radius:4px; cursor:pointer;" onclick="copyPing(this, '${msg}')">Позвать</button>
+                        <span style="font-weight:bold; font-size:0.95rem;">${f.name}</span>
+                        <div style="display:flex; gap:6px;">
+                            <a href="${tgLink}" target="_blank" style="text-decoration:none; background:#0088cc; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; font-weight:bold;">TG</a>
+                            <a href="${waLink}" target="_blank" style="text-decoration:none; background:#25D366; color:white; padding:6px 10px; border-radius:6px; font-size:0.85rem; font-weight:bold;">WA</a>
+                            <button style="padding:6px 10px; border:none; background:#cbd5e1; color:#333; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:bold;" onclick="copyPing(this, '${msgText} ${link}')" title="Скопировать ссылку">📋</button>
+                        </div>
                     </div>`;
                 }).join('');
             });
@@ -393,17 +409,28 @@ function login() {
 		
 		// Формула: Уровень = корень из (XP / 100) + 1. 
         // 1 ур: 0 XP, 2 ур: 100 XP, 3 ур: 400 XP, 4 ур: 900 XP. Идеальная кривая для долгих достижений.
-        function calcLevel(xp) {
-            const lvl = Math.floor(Math.sqrt((xp || 0) / 100)) + 1;
-            return lvl;
+		function updateLevelUI(xp) {
+            const currentXp = xp || 0;
+            // Ур 1: 0-100, Ур 2: 100-400, Ур 3: 400-900 и т.д.
+            const lvl = Math.floor(Math.sqrt(currentXp / 100)) + 1;
+            const xpForCurrent = 100 * Math.pow(lvl - 1, 2);
+            const xpForNext = 100 * Math.pow(lvl, 2);
+            const progressPct = ((currentXp - xpForCurrent) / (xpForNext - xpForCurrent)) * 100;
+
+            const lvlEl = document.getElementById('ui-level');
+            const barEl = document.getElementById('ui-xp-bar');
+            const textEl = document.getElementById('ui-xp-text');
+
+            if (lvlEl) lvlEl.innerText = `⭐ ${lvl}`;
+            if (barEl) barEl.style.width = `${progressPct}%`;
+            if (textEl) textEl.innerText = `${currentXp} / ${xpForNext} XP`;
         }
 		
         function loadProgress() {
             fetch(`/api/student-progress/${state.studentId}`).then(res => res.json()).then(data => {
                 const streakEl = document.getElementById('ui-streak');
                 if (streakEl) streakEl.innerText = `🔥 ${data.streak ?? 0}`;
-                const lvlEl = document.getElementById('ui-level');
-                if (lvlEl) lvlEl.innerText = `⭐ ${calcLevel(data.xp)}`;
+                updateLevelUI(data.xp);
                 state.achievements = data.achievements;
                 
                 ['factor', 'nod', 'nok', 'fraction_basics', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare'].forEach(topic => {
@@ -1072,7 +1099,7 @@ function login() {
             const achEl = document.getElementById('ui-result-ach');
             if (achEl) achEl.innerHTML = '';
 
-			fetch('/api/save-result', {
+            fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts, deviceHash: state.deviceHash })
             }).then(r => r.json()).then(resp => {
@@ -1081,7 +1108,9 @@ function login() {
                 if (resp.earnedXp !== undefined) {
                     const xpMsg = resp.earnedXp === 100 ? `+${resp.earnedXp} XP (Супер!)` : `+${resp.earnedXp} XP`;
                     document.getElementById('ui-result-xp').innerText = xpMsg;
-                    document.getElementById('ui-level').innerText = `⭐ ${calcLevel(resp.newXp)}`;
+                    
+                    // Обновляем визуальную полоску и текст текущего уровня
+                    updateLevelUI(resp.newXp);
                 }
 
                 if (achEl && resp.newAchievements && resp.newAchievements.length) {
