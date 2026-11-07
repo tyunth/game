@@ -675,7 +675,7 @@ app.get('/admin', adminAuth, (req, res) => {
                         <th>Статус сегодня</th>
                         <th onclick="sortTable(1, false)">Класс ↕</th>
                         <th onclick="sortTable(2, false)" style="text-align:left;">Ученик ↕</th>
-                        <th>Прогресс за выбранную неделю</th>
+                        <th onclick="sortTable(3, true)">Прогресс за неделю ↕</th>
                         <th onclick="sortTable(4, true)" title="Дней подряд">Стрик ↕</th>
                         <th onclick="sortTable(5, true)" title="Золото с 1 ноября">Золото (Всё) ↕</th>
                         <th onclick="sortTable(6, true)">Сыграно игр ↕</th>
@@ -729,7 +729,7 @@ app.get('/admin', adminAuth, (req, res) => {
                     <td class="status">${status}</td>
                     <td>${r.class_name || '-'}${test ? ' 🧪' : ''}</td>
                     <td style="text-align:left;">${r.name}</td>
-                    <td>${weekCell}</td>
+                    <td data-sort="${uniqueGoldsWeek * 100 + activeDays}">${weekCell}</td>
                     <td>${r.streak}</td>
                     <td>${r.total_gold}</td>
                     <td>${r.total_games}</td>
@@ -797,15 +797,15 @@ app.get('/admin', adminAuth, (req, res) => {
                         table.setAttribute("data-dir", dir === 1 ? "asc" : "desc");
 
                         rows.sort(function(a, b) {
-                            var x = a.cells[n].innerText.trim();
-                            var y = b.cells[n].innerText.trim();
-                            
-                            if (isNumber) {
-                                x = parseFloat(x) || 0;
-                                y = parseFloat(y) || 0;
-                                return (x - y) * dir;
-                            }
-                            return x.localeCompare(y) * dir;
+							var x = a.cells[n].getAttribute('data-sort') || a.cells[n].innerText.trim();
+							var y = b.cells[n].getAttribute('data-sort') || b.cells[n].innerText.trim();
+                    
+							if (isNumber) {
+								x = parseFloat(x) || 0;
+								y = parseFloat(y) || 0;
+								return (x - y) * dir;
+							}
+							return x.localeCompare(y) * dir;
                         });
                         
                         rows.forEach(r => tbody.appendChild(r));
