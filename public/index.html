@@ -83,7 +83,13 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 350px; text-align: left; max-height: 80vh; overflow-y: auto; }
-    </style>
+		/* Стили для выбора чисел крест-накрест */
+        .cross-el { display: inline-block; cursor: pointer; padding: 2px 8px; border-radius: 8px; border: 2px solid transparent; transition: all 0.2s; }
+        .cross-el:hover { background: #eaf1fb; }
+        .cross-el.selected { border-color: #f39c12; background: #fdf5e6; color: #d35400; font-weight: bold; transform: scale(1.1); }
+        .cross-flash { animation: flashGreen 0.6s ease-out; }
+        @keyframes flashGreen { 0% { color: #2ecc71; transform: scale(1.3); } 100% { color: inherit; transform: scale(1); } }
+	</style>
 </head>
 <body>
 
@@ -130,15 +136,26 @@
                 </div>
             </details>
 
-            <!-- АКТУАЛЬНЫЕ ТЕМЫ -->
+			<!-- АКТУАЛЬНЫЕ ТЕМЫ -->
             <div class="map-level row2">
                 <div class="topic-wrapper">
                     <div class="topic-node oval" id="node-fraction_simplify" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_simplify')">Сокращение</div>
                     <div class="topic-streak-badge" id="streak-fraction_simplify">🔥 0</div>
                 </div>
                 <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_simplify_hard" style="background: #8e44ad; border-color: #732d91;" onclick="clickTopic('fraction_simplify_hard')">Большое сокращение</div>
+                    <div class="topic-streak-badge" id="streak-fraction_simplify_hard">🔥 0</div>
+                </div>
+            </div>
+
+            <div class="map-level row2">
+                <div class="topic-wrapper">
                     <div class="topic-node oval" id="node-fraction_equiv" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_equiv')">Новый знаменатель</div>
                     <div class="topic-streak-badge" id="streak-fraction_equiv">🔥 0</div>
+                </div>
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_compare')">Сравнение дробей</div>
+                    <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
                 </div>
             </div>
 
@@ -155,8 +172,8 @@
 
             <div class="map-level">
                 <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_compare')">Сравнение дробей</div>
-                    <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
+                    <div class="topic-node oval" id="node-fraction_mult_cross" style="background: #e67e22; border-color: #d35400;" onclick="clickTopic('fraction_mult_cross')">Умножение и крест</div>
+                    <div class="topic-streak-badge" id="streak-fraction_mult_cross">🔥 0</div>
                 </div>
             </div>
 
@@ -343,9 +360,9 @@ function login() {
 
         // --- ЛОГИКА СТАТИСТИКИ ТЕМ ---
         let topicStats = {};
-        const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение дробей', fraction_simplify: 'Сокращение' };
-
-        function fetchTopicStats() {
+        const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение дробей', fraction_simplify: 'Сокращение', fraction_simplify_hard: 'Сложное сокращение', fraction_mult_cross: 'Умножение (Крест)' };
+        
+		function fetchTopicStats() {
             fetch('/api/topic-stats').then(r => r.json()).then(d => topicStats = d).catch(()=>{});
         }
 
@@ -422,7 +439,7 @@ function login() {
                 updateLevelUI(data.xp);
                 state.achievements = data.achievements;
                 
-                ['factor', 'nod', 'nok', 'fraction_basics','fraction_simplify', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare'].forEach(topic => {
+                ['factor', 'nod', 'nok', 'fraction_basics','fraction_simplify', 'fraction_simplify_hard', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare', 'fraction_mult_cross'].forEach(topic => {
                     const badge = document.getElementById(`streak-${topic}`);
                     if (badge) badge.innerText = `🔥 ${data.topicStreaks[topic] || 0}`;
                 });
@@ -708,6 +725,71 @@ function login() {
                     };
                 }
             },
+			'fraction_simplify_hard': {
+                id: 'fraction_simplify_hard', theory: '<b>Большое сокращение:</b> когда числа огромные, не пытайся сразу найти самый большой делитель. Сокращай постепенно (шагами)!<br><br><b>Пример:</b> 168/252.<br>Оба четные, делим на 2: 84/126.<br>Опять четные, делим на 2: 42/63.<br>Делятся на 7 (по таблице умножения): 6/9.<br>Делятся на 3: 2/3.<br>Всё, это ответ!',
+                generate: () => {
+                    let finalNum = randomInt(1, 5);
+                    let finalDen = randomInt(2, 7);
+                    while(getGCD(finalNum, finalDen) !== 1 || finalNum === finalDen) { finalNum = randomInt(1, 5); finalDen = randomInt(2, 7); }
+                    
+                    const factors = [2, 2, 3, 3, 5, 7];
+                    let num = finalNum, den = finalDen;
+                    for(let i = 0; i < 3; i++) {
+                        const f = factors[randomInt(0, factors.length-1)];
+                        num *= f; den *= f;
+                    }
+                    
+                    return {
+                        type: 'fraction_simplify_step',
+                        text: `Сократи огромную дробь:`,
+                        html: `<div class="frac-block" style="font-size:3rem; transition: transform 0.3s;" id="ui-step-frac">
+                                  <span class="frac-part"><span class="frac-num">${num}</span><span class="frac-den">${den}</span></span>
+                               </div>
+                               <div style="margin-top:20px; font-size:1.1rem; color:var(--muted);">
+                                  На сколько разделим сейчас? <br>
+                                  <div class="input-active" id="inp-step-div" style="margin:10px auto; width:70px; height:50px; font-size:1.8rem; display:flex; justify-content:center; align-items:center; border:2px dashed var(--primary); border-radius:10px; background:#eff6ff;">?</div>
+                               </div>`,
+                        num: num, den: den,
+                        hint: `Используй признаки делимости! Если оба числа заканчиваются на четную цифру - смело дели на 2. Если на 0 или 5 - дели на 5.`
+                    };
+                }
+            },
+            'fraction_mult_cross': {
+                id: 'fraction_mult_cross', theory: '<b>Умножение дробей:</b> чтобы умножить дробь на дробь, нужно числитель умножить на числитель, а знаменатель на знаменатель.<br><br>🚨 <b>НО СНАЧАЛА СОКРАТИ!</b><br>Можно сокращать любое верхнее число с любым нижним ("крест-накрест").<br><br><b>Пример:</b> (14/25) × (15/21).<br>14 сверху и 21 снизу делятся на 7. Остаются 2 и 3.<br>15 и 25 делятся на 5. Остаются 3 и 5.<br>Итог: (2 × 3) / (5 × 3) = 6 / 15 = 2/5.',
+                generate: () => {
+                    let bN0 = randomInt(1, 5), bD1 = randomInt(1, 5); while(getGCD(bN0, bD1) !== 1) bD1 = randomInt(1, 5);
+                    let bN1 = randomInt(1, 5), bD0 = randomInt(1, 5); while(getGCD(bN1, bD0) !== 1) bD0 = randomInt(1, 5);
+                    const m1 = randomInt(2, 6), m2 = randomInt(2, 6);
+                    let n0 = bN0 * m1, d1 = bD1 * m1, n1 = bN1 * m2, d0 = bD0 * m2;
+                    if (Math.random() > 0.5) { let temp = n0; n0 = n1; n1 = temp; } // Путаем местами
+
+                    return {
+                        type: 'fraction_cross',
+                        text: `Сократи перед умножением!`,
+                        html: `<div style="font-size:0.9rem; color:var(--muted); margin-bottom:15px;">Нажми на верхнее и нижнее число, чтобы сократить их</div>
+                            <div class="frac-block" style="font-size:2.5rem; margin-bottom:10px;">
+                               <span class="frac-part"><span class="frac-num">
+                                   <span class="cross-el num-el" id="c-n0" onclick="selCross('n0')">${n0}</span> × <span class="cross-el num-el" id="c-n1" onclick="selCross('n1')">${n1}</span>
+                               </span><span class="frac-den">
+                                   <span class="cross-el den-el" id="c-d0" onclick="selCross('d0')">${d0}</span> × <span class="cross-el den-el" id="c-d1" onclick="selCross('d1')">${d1}</span>
+                               </span></span>
+                            </div>
+                            <div id="cross-action" style="display:none; font-size:1.1rem; color:var(--primary); font-weight:bold;">
+                                На сколько их сократим?<br>
+                                <div class="input-active" id="inp-cross-div" style="margin:10px auto; width:70px; height:50px; font-size:1.8rem; display:flex; justify-content:center; align-items:center; border:2px dashed var(--primary); border-radius:10px; background:#eff6ff;">?</div>
+                            </div>
+                            <div id="cross-final" style="display:none; font-size:1.1rem; flex-direction:column; align-items:center;">
+                                ✅ Всё сокращено! Теперь умножай:<br>
+                                <div class="input-frac" style="margin-top:15px;">
+                                    <div class="input-num input-active" id="c-fin-n" onclick="setFocus('num')">?</div>
+                                    <div class="input-den" id="c-fin-d" onclick="setFocus('den')">?</div>
+                                </div>
+                            </div>`,
+                        state: { n0, n1, d0, d1 }, sel: [], phase: 'cross',
+                        hint: `Сокращать можно любое число сверху с любым числом снизу. Выбери их, найди их общий делитель и раздели.`
+                    };
+                }
+            },
             'fraction_compare': {
                 id: 'fraction_compare', theory: '<b>Как сравнить дроби?</b><br><br>1. С одинаковыми знаменателями: больше та, у которой числитель больше.<br>2. С разными: приведи к общему знаменателю.<br>3. Смешанные числа: сначала сравниваем целые части. Если они равны — сравниваем дробные.',
                 generate: () => {
@@ -769,7 +851,7 @@ function login() {
             nextTask();
         }
 
-        function nextTask() {
+function nextTask() {
             state.currentInput = ''; state.currentFactors = []; state.startTime = Date.now();
             state.mistakes = 0; state.locked = false;
             
@@ -781,9 +863,7 @@ function login() {
             state.currentTask = generateTask(state.currentTopic.id);
             document.getElementById('ui-task').innerHTML = state.currentTask.text;
 
-            document.getElementById('keyboard-prime').style.display = 'none';
-            document.getElementById('keyboard-standard').style.display = 'none';
-            document.getElementById('keyboard-compare').style.display = 'none';
+            document.querySelectorAll('.numpad').forEach(n => n.style.display = 'none');
 
             if (state.currentTopic.id === 'factor') {
                 document.getElementById('keyboard-prime').style.display = 'grid';
@@ -802,13 +882,9 @@ function login() {
             else if (t.type === 'fraction_read') {
                 svgCont.innerHTML = t.svg;
                 state.inputFocus = 'num'; 
-                ansCont.innerHTML = `
-                    <div class="input-frac">
-                        <div class="input-num input-active" id="inp-read-num" onclick="setFocus('num')">?</div>
-                        <div class="input-den" id="inp-read-den" onclick="setFocus('den')">?</div>
-                    </div>`;
+                ansCont.innerHTML = `<div class="input-frac"><div class="input-num input-active" id="inp-read-num" onclick="setFocus('num')">?</div><div class="input-den" id="inp-read-den" onclick="setFocus('den')">?</div></div>`;
             }
-            else if (t.type === 'mixed_to_improper' || t.type === 'improper_to_mixed' || t.type === 'fraction_equiv' || t.type === 'fraction_compare') {
+            else if (['mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare', 'fraction_simplify_step', 'fraction_cross'].includes(t.type)) {
                 ansCont.innerHTML = t.html;
             }
             else {
@@ -817,15 +893,40 @@ function login() {
             }
         }
 
-        function setFocus(field) {
-            state.inputFocus = field;
-            state.currentInput = ''; // Сбрасываем буфер ввода при смене поля
-            document.querySelectorAll('.input-active').forEach(el => el.classList.remove('input-active'));
-            if(field === 'num') document.getElementById('inp-read-num').classList.add('input-active');
-            if(field === 'den') document.getElementById('inp-read-den').classList.add('input-active');
+        // Выбор чисел для креста
+        function selCross(id) {
+            const t = state.currentTask;
+            if(t.type !== 'fraction_cross' || t.phase !== 'cross') return;
+            const el = document.getElementById('c-' + id);
+            
+            if (t.sel.includes(id)) { // Отмена выбора
+                t.sel = t.sel.filter(x => x !== id);
+                el.classList.remove('selected');
+                document.getElementById('cross-action').style.display = 'none';
+                return;
+            }
+            
+            const isNum = id.startsWith('n');
+            if (isNum && t.sel.some(x => x.startsWith('n'))) return; // Нельзя два верхних
+            if (!isNum && t.sel.some(x => x.startsWith('d'))) return; // Нельзя два нижних
+            
+            t.sel.push(id); el.classList.add('selected');
+            if (t.sel.length === 2) {
+                document.getElementById('cross-action').style.display = 'block';
+                state.currentInput = '';
+                document.getElementById('inp-cross-div').innerText = '?';
+            }
         }
 
-        // Сброс показа правильного ответа
+        function setFocus(field) {
+            state.inputFocus = field; state.currentInput = ''; 
+            document.querySelectorAll('.input-active').forEach(el => el.classList.remove('input-active'));
+            const nEl = document.getElementById('inp-read-num') || document.getElementById('c-fin-n');
+            const dEl = document.getElementById('inp-read-den') || document.getElementById('c-fin-d');
+            if (field === 'num' && nEl) nEl.classList.add('input-active');
+            if (field === 'den' && dEl) dEl.classList.add('input-active');
+        }
+
         let revealTimer = null;
         function clearReveal() {
             if (revealTimer) { clearInterval(revealTimer); revealTimer = null; }
@@ -842,13 +943,10 @@ function login() {
             if (t.type === 'fraction_read') {
                 if(state.currentInput.length < 2) state.currentInput += num;
                 document.getElementById(`inp-read-${state.inputFocus}`).innerText = state.currentInput;
-                // Авто-переключение
                 if(state.inputFocus === 'num' && state.currentInput.length > 0) {
                     t.userNum = parseInt(state.currentInput);
                     setTimeout(() => { setFocus('den'); }, 200);
-                } else if (state.inputFocus === 'den') {
-                    t.userDen = parseInt(state.currentInput);
-                }
+                } else if (state.inputFocus === 'den') t.userDen = parseInt(state.currentInput);
             }
             else if (t.type === 'mixed_to_improper') {
                 if(state.currentInput.length < 3) state.currentInput += num;
@@ -859,9 +957,26 @@ function login() {
                 if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = state.currentInput;
                 else document.getElementById('inp-mixed-rem').innerText = state.currentInput;
             }
-			else if (t.type === 'fraction_equiv') {
+            else if (t.type === 'fraction_equiv') {
                 if(state.currentInput.length < 3) state.currentInput += num;
                 document.getElementById('inp-equiv-num').innerText = state.currentInput;
+            }
+            else if (t.type === 'fraction_simplify_step') {
+                if(state.currentInput.length < 3) state.currentInput += num;
+                document.getElementById('inp-step-div').innerText = state.currentInput;
+            }
+            else if (t.type === 'fraction_cross') {
+                if (t.phase === 'cross') {
+                    if(state.currentInput.length < 2) state.currentInput += num;
+                    document.getElementById('inp-cross-div').innerText = state.currentInput;
+                } else {
+                    if(state.currentInput.length < 3) state.currentInput += num;
+                    document.getElementById(`c-fin-${state.inputFocus.charAt(0)}`).innerText = state.currentInput;
+                    if(state.inputFocus === 'num') {
+                        t.userNum = parseInt(state.currentInput);
+                        setTimeout(() => { setFocus('den'); }, 200);
+                    } else t.userDen = parseInt(state.currentInput);
+                }
             }
             else {
                 if (state.currentInput.length < 5) state.currentInput += num; 
@@ -873,25 +988,23 @@ function login() {
         
         function clearAnswer() { 
             if (state.locked) return; 
-            state.currentInput = ''; 
-            const t = state.currentTask;
+            state.currentInput = ''; const t = state.currentTask;
             if (t.type === 'fraction_read') {
                 document.getElementById(`inp-read-${state.inputFocus}`).innerText = '?';
                 if(state.inputFocus === 'num') t.userNum = null; else t.userDen = null;
-            } else if (t.type === 'mixed_to_improper') {
-                document.getElementById('inp-improper-num').innerText = '?';
-            } else if (t.type === 'improper_to_mixed') {
-                if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = '?';
-                else document.getElementById('inp-mixed-rem').innerText = '?';
-			} else if (t.type === 'fraction_equiv') {
-                document.getElementById('inp-equiv-num').innerText = '?';
-            } else {
-                state.currentFactors = []; updateDisplay(); 
-            }
+            } else if (t.type === 'mixed_to_improper') document.getElementById('inp-improper-num').innerText = '?';
+            else if (t.type === 'improper_to_mixed') {
+                if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = '?'; else document.getElementById('inp-mixed-rem').innerText = '?';
+            } else if (t.type === 'fraction_equiv') document.getElementById('inp-equiv-num').innerText = '?';
+            else if (t.type === 'fraction_simplify_step') document.getElementById('inp-step-div').innerText = '?';
+            else if (t.type === 'fraction_cross') {
+                if(t.phase === 'cross') document.getElementById('inp-cross-div').innerText = '?';
+                else { document.getElementById(`c-fin-${state.inputFocus.charAt(0)}`).innerText = '?'; if(state.inputFocus==='num') t.userNum=null; else t.userDen=null; }
+            } else { state.currentFactors = []; updateDisplay(); }
         }
         
         function updateDisplay() {
-            if (state.currentTask.type) return; // У новых типов свой UI
+            if (state.currentTask.type) return; 
             const d = document.getElementById('ui-answer');
             d.classList.remove('error', 'correct');
             d.innerText = state.currentTopic.id === 'factor' ? (state.currentFactors.length ? state.currentFactors.join(' × ') : '?') : (state.currentInput || '?');
@@ -899,52 +1012,63 @@ function login() {
 
         function checkAnswer() {
             if (state.locked) return;
-            const t = state.currentTask;
-            let isCorrect = false;
-            let val = state.currentInput;
+            const t = state.currentTask; let isCorrect = false; let val = state.currentInput;
 
-            if (t.type === 'fraction_constructor') {
-                const filled = document.querySelectorAll('.svg-part.filled').length;
-                isCorrect = (filled === t.answer);
-                val = `Закрашено ${filled}`;
-            } 
-            else if (t.type === 'fraction_read') {
-                if (!t.userNum || !t.userDen) return; // Не ввел оба
-                isCorrect = (t.userNum === t.answer.num && t.userDen === t.answer.den);
-                val = `${t.userNum}/${t.userDen}`;
+            if (t.type === 'fraction_simplify_step') {
+                const div = parseInt(val);
+                if (!div || div <= 1 || t.num % div !== 0 || t.den % div !== 0) return handleResult(false, val);
+                
+                t.num /= div; t.den /= div;
+                document.getElementById('ui-step-frac').innerHTML = `<span class="frac-part"><span class="frac-num">${t.num}</span><span class="frac-den">${t.den}</span></span>`;
+                document.getElementById('ui-step-frac').style.transform = 'scale(1.1)';
+                setTimeout(() => document.getElementById('ui-step-frac').style.transform = 'scale(1)', 200);
+                
+                state.currentInput = ''; document.getElementById('inp-step-div').innerText = '?';
+                if (getGCD(t.num, t.den) === 1) handleResult(true, val);
+                return;
             }
-            else if (t.type === 'mixed_to_improper') {
-                if (!val) return;
-                isCorrect = (parseInt(val) === t.answer);
+
+            if (t.type === 'fraction_cross') {
+                if (t.phase === 'cross') {
+                    const div = parseInt(val);
+                    if (!div || div <= 1 || t.sel.length !== 2) return handleResult(false, val);
+                    const p0 = t.sel[0], p1 = t.sel[1];
+                    if (t.state[p0] % div !== 0 || t.state[p1] % div !== 0) return handleResult(false, val);
+                    
+                    t.state[p0] /= div; t.state[p1] /= div;
+                    t.sel.forEach(p => {
+                        const el = document.getElementById('c-' + p);
+                        el.innerText = t.state[p];
+                        el.classList.remove('selected'); el.classList.add('cross-flash');
+                        setTimeout(() => el.classList.remove('cross-flash'), 600);
+                    });
+                    t.sel = []; state.currentInput = '';
+                    document.getElementById('inp-cross-div').innerText = '?';
+                    document.getElementById('cross-action').style.display = 'none';
+
+                    if (getGCD(t.state.n0, t.state.d0) === 1 && getGCD(t.state.n0, t.state.d1) === 1 && getGCD(t.state.n1, t.state.d0) === 1 && getGCD(t.state.n1, t.state.d1) === 1) {
+                        t.phase = 'final'; document.getElementById('cross-final').style.display = 'flex'; setFocus('num');
+                    }
+                    return;
+                } else {
+                    if (!t.userNum || !t.userDen) return;
+                    isCorrect = (t.userNum === t.state.n0 * t.state.n1 && t.userDen === t.state.d0 * t.state.d1);
+                    return handleResult(isCorrect, val);
+                }
             }
+
+            if (t.type === 'fraction_constructor') { const filled = document.querySelectorAll('.svg-part.filled').length; isCorrect = (filled === t.answer); val = `Закрашено ${filled}`; } 
+            else if (t.type === 'fraction_read') { if (!t.userNum || !t.userDen) return; isCorrect = (t.userNum === t.answer.num && t.userDen === t.answer.den); val = `${t.userNum}/${t.userDen}`; }
+            else if (t.type === 'mixed_to_improper' || t.type === 'fraction_equiv') { if (!val) return; isCorrect = (parseInt(val) === t.answer); }
             else if (t.type === 'improper_to_mixed') {
                 if (!val) return;
                 const vInt = parseInt(val);
                 if (t.step === 1) {
-                    if (vInt === t.answer1) {
-                        // Правильно ввел целое, переходим ко второму шагу
-                        t.step = 2;
-                        state.currentInput = '';
-                        document.getElementById('inp-mixed-whole').classList.remove('input-active');
-                        document.getElementById('inp-mixed-rem').classList.add('input-active');
-                        document.getElementById('inp-mixed-rem').style.opacity = '1';
-                        return; // Не вызываем обработчик финала
-                    } else { isCorrect = false; }
-                } else {
-                    if (vInt === t.answer2) { isCorrect = true; } 
-                    else { isCorrect = false; }
-                }
-            }
-			else if (t.type === 'fraction_equiv') {
-                if (!val) return;
-                isCorrect = (parseInt(val) === t.answer);
-            }
-            else {
-                if (!val) return;
-                isCorrect = (parseInt(val) === t.answer);
-            }
+                    if (vInt === t.answer1) { t.step = 2; state.currentInput = ''; document.getElementById('inp-mixed-whole').classList.remove('input-active'); document.getElementById('inp-mixed-rem').classList.add('input-active'); document.getElementById('inp-mixed-rem').style.opacity = '1'; return; } 
+                    else isCorrect = false;
+                } else { isCorrect = (vInt === t.answer2); }
+            } else { if (!val) return; isCorrect = (parseInt(val) === t.answer); }
 
-            const timeTaken = Math.round((Date.now() - state.startTime) / 1000);
             handleResult(isCorrect, val);
         }
 
@@ -956,13 +1080,9 @@ function login() {
         }
 		
 		function submitCompare(val) {
-            if (state.locked) return;
-            const t = state.currentTask;
-            if (t.type !== 'fraction_compare') return;
-            
+            if (state.locked) return; const t = state.currentTask; if (t.type !== 'fraction_compare') return;
             document.getElementById('inp-compare').innerText = val;
-            const isCorrect = (val === t.answer);
-            handleResult(isCorrect, val);
+            handleResult(val === t.answer, val);
         }
 
         function handleResult(isCorrect, val) {
@@ -971,29 +1091,58 @@ function login() {
                 if (state.score >= 5) endSession('gold'); else nextTask();
                 return;
             }
-            // Ошибка
-            state.mistakes++;
-            state.hearts--; updateHearts();
+            state.mistakes++; state.hearts--; updateHearts();
             if (state.hearts <= 0 || state.mistakes >= 2) { showCorrectAnswer(); return; }
 
-            // Тряска элемента с ошибкой
             const t = state.currentTask;
 			let errEl = document.getElementById('ui-answer');
             if (t.type === 'mixed_to_improper') errEl = document.getElementById('inp-improper-num');
             if (t.type === 'improper_to_mixed') errEl = (t.step === 1) ? document.getElementById('inp-mixed-whole') : document.getElementById('inp-mixed-rem');
             if (t.type === 'fraction_equiv') errEl = document.getElementById('inp-equiv-num');
             if (t.type === 'fraction_compare') errEl = document.getElementById('inp-compare');
+            if (t.type === 'fraction_simplify_step') errEl = document.getElementById('inp-step-div');
+            if (t.type === 'fraction_cross') errEl = t.phase === 'cross' ? document.getElementById('inp-cross-div') : document.getElementById('c-fin-n');
             
             errEl.classList.add('error-shake');
             document.getElementById('ui-retry').innerText = 'Попробуй ещё раз';
             
-            setTimeout(() => { 
-                errEl.classList.remove('error-shake');
-                state.currentInput = ''; clearAnswer();
-            }, 600);
+            setTimeout(() => { errEl.classList.remove('error-shake'); state.currentInput = ''; clearAnswer(); }, 600);
         }
 
         function showCorrectAnswer() {
+            state.locked = true;
+            document.getElementById('ui-retry').innerText = 'Разбери пример, потом идём дальше';
+            
+            const t = state.currentTask;
+            if(t.type === 'fraction_constructor') document.getElementById('ui-retry').innerText = `Надо было закрасить ровно ${t.answer} кус.`;
+            else if (t.type === 'fraction_read') {
+                document.getElementById('inp-read-num').innerText = t.answer.num; document.getElementById('inp-read-den').innerText = t.answer.den;
+                document.querySelectorAll('.input-num, .input-den').forEach(e => {e.classList.remove('input-active'); e.classList.add('correct');});
+            } else if (t.type === 'mixed_to_improper') { document.getElementById('inp-improper-num').innerText = t.answer; document.getElementById('inp-improper-num').classList.add('correct'); }
+            else if (t.type === 'improper_to_mixed') {
+                document.getElementById('inp-mixed-whole').innerText = t.answer1; document.getElementById('inp-mixed-rem').innerText = t.answer2;
+                document.getElementById('inp-mixed-rem').style.opacity = '1';
+                document.getElementById('inp-mixed-whole').classList.add('correct'); document.getElementById('inp-mixed-rem').classList.add('correct');
+			} else if (t.type === 'fraction_equiv') { document.getElementById('inp-equiv-num').innerText = t.answer; document.getElementById('inp-equiv-num').classList.add('correct'); }
+            else if (t.type === 'fraction_compare') {
+                document.getElementById('inp-compare').innerText = t.answer; document.getElementById('inp-compare').classList.add('correct'); document.getElementById('inp-compare').style.borderColor = 'var(--success)';
+            } else if (t.type === 'fraction_simplify_step') {
+                const gcd = getGCD(t.num, t.den);
+                document.getElementById('ui-retry').innerText = `Итоговый ответ: ${t.num/gcd}/${t.den/gcd}`;
+                document.getElementById('inp-step-div').innerText = '';
+            } else if (t.type === 'fraction_cross') {
+                if (t.phase === 'final') {
+                    document.getElementById('c-fin-n').innerText = t.state.n0 * t.state.n1; document.getElementById('c-fin-d').innerText = t.state.d0 * t.state.d1;
+                    document.getElementById('c-fin-n').classList.add('correct'); document.getElementById('c-fin-d').classList.add('correct');
+                } else document.getElementById('ui-retry').innerText = `Нужно было найти общий делитель`;
+            } else {
+                const d = document.getElementById('ui-answer'); d.classList.add('correct'); d.innerText = 'Правильный ответ: ' + (t.factors ? t.factors.join(' × ') : t.answer);
+            }
+
+            const btn = document.getElementById('btn-next'); btn.style.display = 'block';
+            let left = 7; btn.textContent = 'Дальше (' + left + ')';
+            clearInterval(revealTimer); revealTimer = setInterval(() => { left--; if (left <= 0) { nextAfterReveal(); return; } btn.textContent = 'Дальше (' + left + ')'; }, 1000);
+        }
             state.locked = true;
             document.getElementById('ui-retry').innerText = 'Разбери пример, потом идём дальше';
             
