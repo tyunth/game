@@ -1143,46 +1143,6 @@ function nextTask() {
             let left = 7; btn.textContent = 'Дальше (' + left + ')';
             clearInterval(revealTimer); revealTimer = setInterval(() => { left--; if (left <= 0) { nextAfterReveal(); return; } btn.textContent = 'Дальше (' + left + ')'; }, 1000);
         }
-            state.locked = true;
-            document.getElementById('ui-retry').innerText = 'Разбери пример, потом идём дальше';
-            
-            // В зависимости от типа подсвечиваем правильный ответ
-            const t = state.currentTask;
-            if(t.type === 'fraction_constructor') {
-                document.getElementById('ui-retry').innerText = `Надо было закрасить ровно ${t.answer} кус.`;
-            } else if (t.type === 'fraction_read') {
-                document.getElementById('inp-read-num').innerText = t.answer.num;
-                document.getElementById('inp-read-den').innerText = t.answer.den;
-                document.querySelectorAll('.input-num, .input-den').forEach(e => {e.classList.remove('input-active'); e.classList.add('correct');});
-            } else if (t.type === 'mixed_to_improper') {
-                document.getElementById('inp-improper-num').innerText = t.answer;
-                document.getElementById('inp-improper-num').classList.add('correct');
-            } else if (t.type === 'improper_to_mixed') {
-                document.getElementById('inp-mixed-whole').innerText = t.answer1;
-                document.getElementById('inp-mixed-rem').innerText = t.answer2;
-                document.getElementById('inp-mixed-rem').style.opacity = '1';
-                document.getElementById('inp-mixed-whole').classList.add('correct');
-                document.getElementById('inp-mixed-rem').classList.add('correct');
-			} else if (t.type === 'fraction_equiv') {
-                document.getElementById('inp-equiv-num').innerText = t.answer;
-                document.getElementById('inp-equiv-num').classList.add('correct');
-            } else if (t.type === 'fraction_compare') {
-                document.getElementById('inp-compare').innerText = t.answer;
-                document.getElementById('inp-compare').classList.add('correct');
-                document.getElementById('inp-compare').style.borderColor = 'var(--success)';
-            } else {
-                const d = document.getElementById('ui-answer');
-                d.classList.add('correct');
-                d.innerText = 'Правильный ответ: ' + (t.factors ? t.factors.join(' × ') : t.answer);
-            }
-
-            const btn = document.getElementById('btn-next');
-            btn.style.display = 'block';
-            let left = 7;
-            btn.textContent = 'Дальше (' + left + ')';
-            clearInterval(revealTimer);
-            revealTimer = setInterval(() => { left--; if (left <= 0) { nextAfterReveal(); return; } btn.textContent = 'Дальше (' + left + ')'; }, 1000);
-        }
 
         function nextAfterReveal() { clearReveal(); if (state.hearts <= 0) endSession('silver'); else nextTask(); }
         function updateHearts() { document.getElementById('ui-hearts').innerText = '❤️'.repeat(state.hearts) + '🖤'.repeat(3 - Math.max(0, state.hearts)); }
