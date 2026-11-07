@@ -146,16 +146,17 @@
                             <div class="topic-streak-badge" id="streak-nok">🔥 0</div>
                         </div>
                     </div>
-                </div>
-            </details>
-
-            <!-- АКТУАЛЬНЫЕ ТЕМЫ: ДРОБИ -->
-            <div class="map-level">
-                <div class="topic-wrapper">
+					<div class="map-level">
+					<div class="topic-wrapper">
                     <div class="topic-node oval" id="node-fraction_basics" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_basics')">Дроби: Основы</div>
                     <div class="topic-streak-badge" id="streak-fraction_basics">🔥 0</div>
                 </div>
             </div>
+                </div>
+            </details>
+
+            <!-- АКТУАЛЬНЫЕ ТЕМЫ: ДРОБИ -->
+	
             <div class="map-level">
                 <div class="topic-wrapper">
                     <div class="topic-node oval" id="node-mixed_to_improper" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('mixed_to_improper')">Перевод в неправильную</div>
@@ -178,6 +179,12 @@
                 <div class="topic-wrapper">
                     <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_compare')">Сравнение дробей</div>
                     <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
+                </div>
+            </div>
+			<div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-fraction_simplify" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_simplify')">Сокращение дробей</div>
+                    <div class="topic-streak-badge" id="streak-fraction_simplify">🔥 0</div>
                 </div>
             </div>
         </div>
@@ -354,7 +361,7 @@ function login() {
 
         // --- ЛОГИКА СТАТИСТИКИ ТЕМ ---
         let topicStats = {};
-        const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение дробей' };
+        const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение дробей', fraction_simplify: 'Сокращение' };
 
         function fetchTopicStats() {
             fetch('/api/topic-stats').then(r => r.json()).then(d => topicStats = d).catch(()=>{});
@@ -433,7 +440,7 @@ function login() {
                 updateLevelUI(data.xp);
                 state.achievements = data.achievements;
                 
-                ['factor', 'nod', 'nok', 'fraction_basics', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare'].forEach(topic => {
+                ['factor', 'nod', 'nok', 'fraction_basics','fraction_simplify', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare'].forEach(topic => {
                     const badge = document.getElementById(`streak-${topic}`);
                     if (badge) badge.innerText = `🔥 ${data.topicStreaks[topic] || 0}`;
                 });
@@ -692,6 +699,30 @@ function login() {
                                </div>`,
                         answer: answer,
                         hint: `Во сколько раз ${den2} больше, чем ${den1}? Умножь числитель ${num1} на это же число.`
+                    };
+                }
+            },
+			'fraction_simplify': {
+                id: 'fraction_simplify', theory: '<b>Сокращение дробей:</b> это деление числителя и знаменателя на их общий делитель (НОД).<br><br><b>Пример:</b> 6/8. И 6, и 8 делятся на 2. 6 : 2 = 3, 8 : 2 = 4. Ответ: 3/4.',
+                generate: () => {
+                    let num, den, divisor;
+                    do {
+                        num = randomInt(1, 9);
+                        den = randomInt(2, 10);
+                    } while (num >= den || getGCD(num, den) !== 1); // Ищем несократимую дробь
+                    divisor = randomInt(2, 6);
+                    const bigNum = num * divisor;
+                    const bigDen = den * divisor;
+                    
+                    return {
+                        type: 'fraction_read', // Переиспользуем готовый интерфейс с двумя окошками!
+                        text: `Сократи дробь:`,
+                        svg: `<div class="frac-block" style="font-size:3rem;">
+                                  <span class="frac-part"><span class="frac-num">${bigNum}</span><span class="frac-den">${bigDen}</span></span>
+                                  <span style="margin:0 15px;">=</span>
+                              </div>`,
+                        answer: { num: num, den: den },
+                        hint: `Найди НОД чисел ${bigNum} и ${bigDen}, а затем раздели на него и числитель, и знаменатель.`
                     };
                 }
             },

@@ -574,12 +574,12 @@ app.get('/admin', adminAuth, (req, res) => {
         weekDays.push(d.toISOString().split('T')[0]);
     }
 
-    const mainQuery = `
+	const mainQuery = `
         SELECT s.id, s.name, s.class_name, s.streak, s.last_played_date, s.is_test,
             COUNT(sess.id) as total_games,
             SUM(CASE WHEN sess.medal = 'gold' THEN 1 ELSE 0 END) as total_gold
         FROM students s
-        LEFT JOIN sessions sess ON s.id = sess.student_id
+        LEFT JOIN sessions sess ON s.id = sess.student_id AND sess.date >= '2026-11-01'
         GROUP BY s.id ORDER BY s.class_name, s.name
     `;
 
@@ -616,7 +616,7 @@ app.get('/admin', adminAuth, (req, res) => {
             const totalStudents = rated.length;
             const classOptions = classRows.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
-            const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого' };
+            const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', fraction_simplify: 'Сокращение', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение' };
 
             const style = `<style>
                 body{font-family:sans-serif; padding:20px; color:#333; background:#f9fbfc;}
@@ -677,7 +677,7 @@ app.get('/admin', adminAuth, (req, res) => {
                         <th onclick="sortTable(2, false)" style="text-align:left;">Ученик ↕</th>
                         <th>Прогресс за выбранную неделю</th>
                         <th onclick="sortTable(4, true)" title="Дней подряд">Стрик ↕</th>
-                        <th onclick="sortTable(5, true)" title="Всего золота за все время">Золото (Всё) ↕</th>
+                        <th onclick="sortTable(5, true)" title="Золото с 1 ноября">Золото (Всё) ↕</th>
                         <th onclick="sortTable(6, true)">Сыграно игр ↕</th>
                         <th>Устройство</th>
                         <th>Управление</th>
@@ -711,13 +711,12 @@ app.get('/admin', adminAuth, (req, res) => {
 
                 const grade10 = activeDays >= 5 ? '<span style="color:#16a34a; background:#dcfce7; padding:2px 6px; border-radius:4px; font-size:0.85rem; margin-left:6px;">Оценка: 10</span>' : '';
 
-                const weekCell = weekHtml
+				const weekCell = weekHtml
                     ? `<details>
-                         <summary>В зачёт: ${uniqueGoldsWeek} 🥇 ${grade10}</summary>
+                         <summary>Заходил: <b>${activeDays} дн.</b> | В зачёт: ${uniqueGoldsWeek} 🥇 ${grade10}</summary>
                          <div class="day-details">${weekHtml}</div>
                        </details>`
                     : `<span style="color:#aaa; font-size:0.85rem;">Нет активности</span>`;
-
                 const test = isTestStudent(r);
                 const devHash = deviceMap.byStudent[r.id];
                 const devInfo = devHash ? deviceMap.byDevice[devHash] : null;
