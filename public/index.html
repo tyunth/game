@@ -938,16 +938,15 @@ function nextTask() {
             if (r) r.innerText = '';
         }
 
-        function appendNum(num) {
+		function appendNum(num) {
             if (state.locked) return;
             const t = state.currentTask;
             
             if (t.type === 'fraction_read') {
                 if(state.currentInput.length < 2) state.currentInput += num;
                 document.getElementById(`inp-read-${state.inputFocus}`).innerText = state.currentInput;
-                if(state.inputFocus === 'num' && state.currentInput.length > 0) {
+                if(state.inputFocus === 'num') {
                     t.userNum = parseInt(state.currentInput);
-                    setTimeout(() => { setFocus('den'); }, 200);
                 } else if (state.inputFocus === 'den') t.userDen = parseInt(state.currentInput);
             }
             else if (t.type === 'mixed_to_improper') {
@@ -976,7 +975,6 @@ function nextTask() {
                     document.getElementById(`c-fin-${state.inputFocus.charAt(0)}`).innerText = state.currentInput;
                     if(state.inputFocus === 'num') {
                         t.userNum = parseInt(state.currentInput);
-                        setTimeout(() => { setFocus('den'); }, 200);
                     } else t.userDen = parseInt(state.currentInput);
                 }
             }
@@ -984,32 +982,6 @@ function nextTask() {
                 if (state.currentInput.length < 5) state.currentInput += num; 
                 updateDisplay(); 
             }
-        }
-
-        function appendFactor(num) { if (state.locked) return; state.currentFactors.push(num); updateDisplay(); }
-        
-        function clearAnswer() { 
-            if (state.locked) return; 
-            state.currentInput = ''; const t = state.currentTask;
-            if (t.type === 'fraction_read') {
-                document.getElementById(`inp-read-${state.inputFocus}`).innerText = '?';
-                if(state.inputFocus === 'num') t.userNum = null; else t.userDen = null;
-            } else if (t.type === 'mixed_to_improper') document.getElementById('inp-improper-num').innerText = '?';
-            else if (t.type === 'improper_to_mixed') {
-                if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = '?'; else document.getElementById('inp-mixed-rem').innerText = '?';
-            } else if (t.type === 'fraction_equiv') document.getElementById('inp-equiv-num').innerText = '?';
-            else if (t.type === 'fraction_simplify_step') document.getElementById('inp-step-div').innerText = '?';
-            else if (t.type === 'fraction_cross') {
-                if(t.phase === 'cross') document.getElementById('inp-cross-div').innerText = '?';
-                else { document.getElementById(`c-fin-${state.inputFocus.charAt(0)}`).innerText = '?'; if(state.inputFocus==='num') t.userNum=null; else t.userDen=null; }
-            } else { state.currentFactors = []; updateDisplay(); }
-        }
-        
-        function updateDisplay() {
-            if (state.currentTask.type) return; 
-            const d = document.getElementById('ui-answer');
-            d.classList.remove('error', 'correct');
-            d.innerText = state.currentTopic.id === 'factor' ? (state.currentFactors.length ? state.currentFactors.join(' × ') : '?') : (state.currentInput || '?');
         }
 
         function checkAnswer() {
@@ -1053,14 +1025,24 @@ function nextTask() {
                     }
                     return;
                 } else {
-                    if (!t.userNum || !t.userDen) return;
+                    if (!t.userNum || !t.userDen) {
+                        if (t.userNum && !t.userDen) setFocus('den');
+                        return;
+                    }
                     isCorrect = (t.userNum === t.state.n0 * t.state.n1 && t.userDen === t.state.d0 * t.state.d1);
                     return handleResult(isCorrect, val);
                 }
             }
 
             if (t.type === 'fraction_constructor') { const filled = document.querySelectorAll('.svg-part.filled').length; isCorrect = (filled === t.answer); val = `Закрашено ${filled}`; } 
-            else if (t.type === 'fraction_read') { if (!t.userNum || !t.userDen) return; isCorrect = (t.userNum === t.answer.num && t.userDen === t.answer.den); val = `${t.userNum}/${t.userDen}`; }
+            else if (t.type === 'fraction_read') { 
+                if (!t.userNum || !t.userDen) {
+                    if (t.userNum && !t.userDen) setFocus('den');
+                    return; 
+                }
+                isCorrect = (t.userNum === t.answer.num && t.userDen === t.answer.den); 
+                val = `${t.userNum}/${t.userDen}`; 
+            }
             else if (t.type === 'mixed_to_improper' || t.type === 'fraction_equiv') { if (!val) return; isCorrect = (parseInt(val) === t.answer); }
             else if (t.type === 'improper_to_mixed') {
                 if (!val) return;
@@ -1073,6 +1055,33 @@ function nextTask() {
 
             handleResult(isCorrect, val);
         }
+		
+        function appendFactor(num) { if (state.locked) return; state.currentFactors.push(num); updateDisplay(); }
+        
+        function clearAnswer() { 
+            if (state.locked) return; 
+            state.currentInput = ''; const t = state.currentTask;
+            if (t.type === 'fraction_read') {
+                document.getElementById(`inp-read-${state.inputFocus}`).innerText = '?';
+                if(state.inputFocus === 'num') t.userNum = null; else t.userDen = null;
+            } else if (t.type === 'mixed_to_improper') document.getElementById('inp-improper-num').innerText = '?';
+            else if (t.type === 'improper_to_mixed') {
+                if(t.step === 1) document.getElementById('inp-mixed-whole').innerText = '?'; else document.getElementById('inp-mixed-rem').innerText = '?';
+            } else if (t.type === 'fraction_equiv') document.getElementById('inp-equiv-num').innerText = '?';
+            else if (t.type === 'fraction_simplify_step') document.getElementById('inp-step-div').innerText = '?';
+            else if (t.type === 'fraction_cross') {
+                if(t.phase === 'cross') document.getElementById('inp-cross-div').innerText = '?';
+                else { document.getElementById(`c-fin-${state.inputFocus.charAt(0)}`).innerText = '?'; if(state.inputFocus==='num') t.userNum=null; else t.userDen=null; }
+            } else { state.currentFactors = []; updateDisplay(); }
+        }
+        
+        function updateDisplay() {
+            if (state.currentTask.type) return; 
+            const d = document.getElementById('ui-answer');
+            d.classList.remove('error', 'correct');
+            d.innerText = state.currentTopic.id === 'factor' ? (state.currentFactors.length ? state.currentFactors.join(' × ') : '?') : (state.currentInput || '?');
+        }
+
 
         function checkFactorAnswer() {
             if (state.locked || !state.currentFactors.length) return;
