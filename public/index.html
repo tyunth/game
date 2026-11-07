@@ -741,7 +741,7 @@ function login() {
                     
                     return {
                         type: 'fraction_simplify_step',
-                        text: `Сократи огромную дробь:`,
+                        text: `Сократи дробь:`,
                         html: `<div class="frac-block" style="font-size:3rem; transition: transform 0.3s;" id="ui-step-frac">
                                   <span class="frac-part"><span class="frac-num">${num}</span><span class="frac-den">${den}</span></span>
                                </div>
@@ -754,7 +754,7 @@ function login() {
                     };
                 }
             },
-            'fraction_mult_cross': {
+			'fraction_mult_cross': {
                 id: 'fraction_mult_cross', theory: '<b>Умножение дробей:</b> чтобы умножить дробь на дробь, нужно числитель умножить на числитель, а знаменатель на знаменатель.<br><br>🚨 <b>НО СНАЧАЛА СОКРАТИ!</b><br>Можно сокращать любое верхнее число с любым нижним ("крест-накрест").<br><br><b>Пример:</b> (14/25) × (15/21).<br>14 сверху и 21 снизу делятся на 7. Остаются 2 и 3.<br>15 и 25 делятся на 5. Остаются 3 и 5.<br>Итог: (2 × 3) / (5 × 3) = 6 / 15 = 2/5.',
                 generate: () => {
                     let bN0 = randomInt(1, 5), bD1 = randomInt(1, 5); while(getGCD(bN0, bD1) !== 1) bD1 = randomInt(1, 5);
@@ -766,25 +766,27 @@ function login() {
                     return {
                         type: 'fraction_cross',
                         text: `Сократи перед умножением!`,
-                        html: `<div style="font-size:0.9rem; color:var(--muted); margin-bottom:15px;">Нажми на верхнее и нижнее число, чтобы сократить их</div>
-                            <div class="frac-block" style="font-size:2.5rem; margin-bottom:10px;">
+                        html: `<div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+                            <div style="font-size:0.9rem; color:var(--muted); margin-bottom:15px; text-align:center;">Нажми на верхнее и нижнее число, чтобы сократить их</div>
+                            <div class="frac-block" style="font-size:2.5rem; margin-bottom:10px; white-space:nowrap;">
                                <span class="frac-part"><span class="frac-num">
                                    <span class="cross-el num-el" id="c-n0" onclick="selCross('n0')">${n0}</span> × <span class="cross-el num-el" id="c-n1" onclick="selCross('n1')">${n1}</span>
                                </span><span class="frac-den">
                                    <span class="cross-el den-el" id="c-d0" onclick="selCross('d0')">${d0}</span> × <span class="cross-el den-el" id="c-d1" onclick="selCross('d1')">${d1}</span>
                                </span></span>
                             </div>
-                            <div id="cross-action" style="display:none; font-size:1.1rem; color:var(--primary); font-weight:bold;">
+                            <div id="cross-action" style="display:none; font-size:1.1rem; color:var(--primary); font-weight:bold; text-align:center;">
                                 На сколько их сократим?<br>
                                 <div class="input-active" id="inp-cross-div" style="margin:10px auto; width:70px; height:50px; font-size:1.8rem; display:flex; justify-content:center; align-items:center; border:2px dashed var(--primary); border-radius:10px; background:#eff6ff;">?</div>
                             </div>
-                            <div id="cross-final" style="display:none; font-size:1.1rem; flex-direction:column; align-items:center;">
+                            <div id="cross-final" style="display:none; font-size:1.1rem; flex-direction:column; align-items:center; text-align:center;">
                                 ✅ Всё сокращено! Теперь умножай:<br>
                                 <div class="input-frac" style="margin-top:15px;">
                                     <div class="input-num input-active" id="c-fin-n" onclick="setFocus('num')">?</div>
                                     <div class="input-den" id="c-fin-d" onclick="setFocus('den')">?</div>
                                 </div>
-                            </div>`,
+                            </div>
+                        </div>`,
                         state: { n0, n1, d0, d1 }, sel: [], phase: 'cross',
                         hint: `Сокращать можно любое число сверху с любым числом снизу. Выбери их, найди их общий делитель и раздели.`
                     };
