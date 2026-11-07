@@ -20,8 +20,8 @@
         .btn-exit:active { opacity: 1; }
 
         .map-container { position: relative; display: flex; flex-direction: column; align-items: center; gap: 46px; width: 100%; max-width: 400px; margin: 10px auto 0; padding: 24px 0 34px; overflow-y: auto; }
-        .map-level { position: relative; display: flex; justify-content: center; align-items: flex-start; gap: 40px; }
-        .map-level.row2::after { content: ''; position: absolute; top: 45px; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 5px; border-radius: 3px; background: repeating-linear-gradient(90deg, #c7d3e0 0 10px, transparent 10px 20px); }
+		.map-level { position: relative; display: flex; justify-content: center; align-items: flex-start; gap: 20px; }
+        .map-level.row2::after { content: ''; position: absolute; top: 45px; left: 50%; transform: translate(-50%, -50%); width: 20px; height: 5px; border-radius: 3px; background: repeating-linear-gradient(90deg, #c7d3e0 0 10px, transparent 10px 20px); }
         .map-level:not(:first-child)::before { content: ''; position: absolute; top: -46px; left: 50%; transform: translateX(-50%); width: 5px; height: 46px; border-radius: 3px; background: repeating-linear-gradient(#c7d3e0 0 10px, transparent 10px 20px); }
 
 
@@ -95,9 +95,9 @@
         <button class="btn" onclick="login()">Войти</button>
     </div>
 
-    <!-- КАРТА ТЕМ -->
+	<!-- КАРТА ТЕМ -->
     <div id="map-screen" class="screen">
-		<div class="top-nav">
+        <div class="top-nav">
             <button class="btn-exit" onclick="logout()">↩️</button>
             
             <div style="flex:1; margin: 0 15px; display:flex; flex-direction:column; gap:4px;">
@@ -114,7 +114,7 @@
             <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆</button>
         </div>
         
-<div class="map-container">
+        <div class="map-container">
             <!-- АРХИВ -->
             <details style="width: 100%; text-align: center; margin-bottom: 20px;">
                 <summary style="display: inline-block; background: white; color: var(--primary); font-weight: bold; padding: 10px 20px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; list-style: none;">📦 Пройденный материал</summary>
@@ -159,79 +159,15 @@
                     <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
                 </div>
             </div>
-        </div>
 
-        <!-- КОМАНДНЫЙ ЗАЧЕТ ТЕПЕРЬ ВНИЗУ -->
-        <div class="team-panel" style="margin-top: 20px;">
-            <div class="team-title">🏆 Командный зачёт <span class="team-sub" id="team-week"></span></div>
-            <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; line-height: 1.3;">
-                В счёт класса идёт максимум 1 золотая медаль по каждой теме в день от участника.
-            </div>
-            <div id="team-rows"></div>
-            <button style="width:100%; margin-top:12px; background:#f39c12; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="openPingModal()">📢 Разбуди одноклассника (+50 XP)</button>
-        </div>
-            
-            <!-- АРХИВ СТАРЫХ ТЕМ -->
-            <details style="width: 100%; text-align: center; margin-bottom: 20px;">
-                <summary style="display: inline-block; background: white; color: var(--primary); font-weight: bold; padding: 10px 20px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; list-style: none;">📦 Пройденный материал (НОД, НОК)</summary>
-                
-                <div style="padding-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 46px;">
-                    <div class="map-level">
-                        <div class="topic-wrapper">
-                            <div class="topic-node oval" id="node-factor" onclick="clickTopic('factor')">Разложение на простые множители</div>
-                            <div class="topic-streak-badge" id="streak-factor">🔥 0</div>
-                        </div>
-                    </div>
-                    <div class="map-level row2">
-                        <div class="topic-wrapper">
-                            <div class="topic-node" id="node-nod" onclick="clickTopic('nod')">НОД</div>
-                            <div class="topic-streak-badge" id="streak-nod">🔥 0</div>
-                        </div>
-                        <div class="topic-wrapper">
-                            <div class="topic-node" id="node-nok" onclick="clickTopic('nok')">НОК</div>
-                            <div class="topic-streak-badge" id="streak-nok">🔥 0</div>
-                        </div>
-                    </div>
-					<div class="map-level">
-					<div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_basics" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_basics')">Дроби: Основы</div>
-                    <div class="topic-streak-badge" id="streak-fraction_basics">🔥 0</div>
+            <!-- КОМАНДНЫЙ ЗАЧЕТ -->
+            <div class="team-panel" style="margin-top: 20px;">
+                <div class="team-title">🏆 Командный зачёт <span class="team-sub" id="team-week"></span></div>
+                <div style="font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; line-height: 1.3;">
+                    В счёт класса идёт максимум 1 золотая медаль по каждой теме в день от участника.
                 </div>
-            </div>
-                </div>
-            </details>
-
-            <!-- АКТУАЛЬНЫЕ ТЕМЫ: ДРОБИ -->
-	
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-mixed_to_improper" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('mixed_to_improper')">Перевод в неправильную</div>
-                    <div class="topic-streak-badge" id="streak-mixed_to_improper">🔥 0</div>
-                </div>
-            </div>
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-improper_to_mixed" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('improper_to_mixed')">Выделение целого</div>
-                    <div class="topic-streak-badge" id="streak-improper_to_mixed">🔥 0</div>
-                </div>
-            </div>
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_equiv" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_equiv')">Новый знаменатель</div>
-                    <div class="topic-streak-badge" id="streak-fraction_equiv">🔥 0</div>
-                </div>
-            </div>
-            <div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_compare')">Сравнение дробей</div>
-                    <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
-                </div>
-            </div>
-			<div class="map-level">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_simplify" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_simplify')">Сокращение дробей</div>
-                    <div class="topic-streak-badge" id="streak-fraction_simplify">🔥 0</div>
-                </div>
+                <div id="team-rows"></div>
+                <button style="width:100%; margin-top:12px; background:#f39c12; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="openPingModal()">📢 Разбуди одноклассника (+50 XP)</button>
             </div>
         </div>
     </div>
