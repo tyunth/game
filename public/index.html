@@ -1521,7 +1521,7 @@ function nextTask() {
                 const el = document.getElementById(t.phase === 'den' ? 'inp-mx-den' : t.phase === 'borrow' ? 'inp-mx-borrow' : `inp-mx-${state.inputFocus}`);
                 if (el) el.innerText = '?';
                 if (t.phase === 'nums') { if (state.inputFocus === 'n1') t.userN1 = null; else t.userN2 = null; }
-                (t.phase === 'final' || t.phase === 'improve') { if (state.inputFocus === 'fw') t.userFinW = null; if (state.inputFocus === 'fn') t.userFinN = null; if (state.inputFocus === 'fd') t.userFinD = null; }
+                if (t.phase === 'final' || t.phase === 'improve') { if (state.inputFocus === 'fw') t.userFinW = null; if (state.inputFocus === 'fn') t.userFinN = null; if (state.inputFocus === 'fd') t.userFinD = null; }
             }
 			else { state.currentFactors = []; updateDisplay(); }
         }
