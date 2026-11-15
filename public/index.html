@@ -883,6 +883,7 @@ function login() {
                         resNum: null, resDen: null,
                         finalPhase: null, // 'reduce' | 'mixed'
                         userFinW: null, userFinN: null, userFinD: null,
+						rawW: null, rawN: null, rawD: null,
                         text: isAdd ? 'Сложи дроби:' : 'Вычти дроби:',
                         html: `<div style="display:flex; flex-direction:column; align-items:center; width:100%;">
                             <div id="as-toast" style="display:none; background:#fef9e7; border:1px solid #f39c12; color:#b9770e; padding:8px 12px; border-radius:10px; font-size:0.85rem; margin-bottom:10px; text-align:center;"></div>
@@ -925,7 +926,7 @@ function login() {
                         // Целое - смешанное (обязательный заём)
                         isAdd = false; needsBorrow = true;
                         d2 = randomInt(3, 12); n2 = randomInt(1, d2 - 1);
-                        w2 = randomInt(1, 4); w1 = w2 + randomInt(1, 4);
+                        w2 = randomInt(1, 4); w1 = w2 + randomInt(2, 4);
                         n1 = 0; d1 = d2;
                     } else if (mode === 'mixed_add_carry') {
                         // Смешанное + смешанное с переходом через единицу
@@ -937,7 +938,7 @@ function login() {
                     } else {
                         // Смешанное - смешанное с заёмом единицы
                         [d1, d2] = pickGoodDenominators(24);
-                        w2 = randomInt(1, 4); w1 = w2 + randomInt(1, 4);
+                        w2 = randomInt(1, 4); w1 = w2 + randomInt(2, 4);
                         n1 = randomInt(1, Math.max(1, Math.floor(d1 / 2)));
                         n2 = randomInt(Math.min(d2 - 1, Math.floor(d2 / 2) + 1), d2 - 1);
                         if ((n1 / d1) >= (n2 / d2)) { n1 = 1; n2 = d2 - 1; }
@@ -1095,7 +1096,8 @@ function nextTask() {
                         <span class="frac-whole">${t.w1 - 1}</span>
                         <span class="frac-part"><div class="input-num input-active" id="inp-mx-borrow" style="min-width:55px; min-height:44px; font-size:1.7rem;">?</div><div class="frac-den">${t.commonDen}</div></span>
                     </div>`;
-			} else if (t.phase === 'final') {
+            } else if (t.phase === 'final') {
+                t.userFinW = null; t.userFinN = null; t.userFinD = null;
                 state.inputFocus = 'fw';
                 const leftPreview = t.w1 > 0
                     ? `<span class="frac-whole">${t.w1}</span><span class="frac-part"><span class="frac-num">${t.curN1}</span><span class="frac-den">${t.commonDen}</span></span>`
@@ -1107,8 +1109,26 @@ function nextTask() {
                 box.innerHTML = `<div class="frac-block" style="font-size:1.8rem; color:var(--primary); margin-bottom:10px; background:#eff6ff; padding:6px 14px; border-radius:12px;">
                         ${leftPreview} <span style="margin:0 8px;">${t.op}</span> ${rightPreview}
                     </div>
-                    <div style="font-size:0.95rem; color:var(--success); font-weight:bold; margin-bottom:8px;">Запиши итоговый ответ (если можно — сократи):</div>
+                    <div style="font-size:0.95rem; color:var(--primary); font-weight:bold; margin-bottom:8px;">Посчитай ответ (если целых 0 — введи 0):</div>
                     <div class="frac-block" style="font-size:2rem; align-items:center;">
+                        <div class="input-whole input-active" id="inp-mx-fw" onclick="setMixedFocus('fw')" style="min-width:55px; min-height:55px; font-size:1.8rem; margin-right:6px;">?</div>
+                        <div class="input-frac" style="font-size:1.6rem;">
+                            <div class="input-num" id="inp-mx-fn" onclick="setMixedFocus('fn')" style="min-width:50px; min-height:42px;">?</div>
+                            <div class="input-den" id="inp-mx-fd" onclick="setMixedFocus('fd')" style="min-width:50px; min-height:42px;">?</div>
+                        </div>
+                    </div>`;
+            } else if (t.phase === 'improve') {
+                t.userFinW = null; t.userFinN = null; t.userFinD = null;
+                state.inputFocus = 'fw';
+                const rawPreview = t.rawW > 0
+                    ? `<span class="frac-whole">${t.rawW}</span><span class="frac-part"><span class="frac-num">${t.rawN}</span><span class="frac-den">${t.rawD}</span></span>`
+                    : `<span class="frac-part"><span class="frac-num">${t.rawN}</span><span class="frac-den">${t.rawD}</span></span>`;
+
+                box.innerHTML = `<div style="background:#eafaf1; border:1px solid var(--success); color:#1e8449; padding:8px 12px; border-radius:10px; font-size:0.9rem; margin-bottom:10px; text-align:center;">
+                        ✅ Считано верно! Но <b>${t.rawW > 0 ? t.rawW + ' ' : ''}${t.rawN}/${t.rawD}</b> можно улучшить — выдели целую часть или сократи:
+                    </div>
+                    <div class="frac-block" style="font-size:2rem; align-items:center;">
+                        ${rawPreview} <span style="margin:0 10px;">=</span>
                         <div class="input-whole input-active" id="inp-mx-fw" onclick="setMixedFocus('fw')" style="min-width:55px; min-height:55px; font-size:1.8rem; margin-right:6px;">?</div>
                         <div class="input-frac" style="font-size:1.6rem;">
                             <div class="input-num" id="inp-mx-fn" onclick="setMixedFocus('fn')" style="min-width:50px; min-height:42px;">?</div>
@@ -1215,7 +1235,7 @@ function nextTask() {
                     else t.userN2 = parseInt(state.currentInput);
                 } else if (t.phase === 'borrow') {
                     document.getElementById('inp-mx-borrow').innerText = state.currentInput;
-                } else if (t.phase === 'final') {
+                } else if (t.phase === 'final' || t.phase === 'improve') {
                     document.getElementById(`inp-mx-${state.inputFocus}`).innerText = state.currentInput;
                     if (state.inputFocus === 'fw') t.userFinW = parseInt(state.currentInput);
                     if (state.inputFocus === 'fn') t.userFinN = parseInt(state.currentInput);
@@ -1410,19 +1430,44 @@ function nextTask() {
                     renderMixedStep(t);
                     return;
                 }
-                if (t.phase === 'final') {
-                    if (!t.userFinW || !t.userFinN || !t.userFinD) {
-                        if (t.userFinW && !t.userFinN) setMixedFocus('fn');
-                        else if (t.userFinN && !t.userFinD) setMixedFocus('fd');
+				if (t.phase === 'final' || t.phase === 'improve') {
+                    // Проверяем через === null, чтобы цифра 0 считалась валидным вводом!
+                    if (t.userFinW === null || t.userFinN === null || t.userFinD === null) {
+                        if (t.userFinW !== null && t.userFinN === null) setMixedFocus('fn');
+                        else if (t.userFinN !== null && t.userFinD === null) setMixedFocus('fd');
                         return;
                     }
-                    const totalNum = t.isAdd
+                    if (t.userFinD === 0) return handleResult(false, 'Деление на 0');
+
+                    // Эталонное значение в виде неправильной дроби с общим знаменателем
+                    const expectedTotalNum = t.isAdd
                         ? ((t.w1 + t.w2) * t.commonDen + t.curN1 + t.curN2)
                         : ((t.w1 - t.w2) * t.commonDen + t.curN1 - t.curN2);
-                    const g = getGCD(totalNum, t.commonDen);
-                    const redN = totalNum / g, redD = t.commonDen / g;
-                    const expW = Math.floor(redN / redD), expN = redN % redD;
-                    isCorrect = (t.userFinW === expW && t.userFinN === expN && t.userFinD === redD);
+
+                    // Сравниваем введенное учеником значение перекрестным умножением (a/b == c/d <=> a*d == c*b)
+                    const userTotalNum = t.userFinW * t.userFinD + t.userFinN;
+                    const isMathematicallyEqual = (userTotalNum * t.commonDen === expectedTotalNum * t.userFinD);
+
+                    if (!isMathematicallyEqual) {
+                        return handleResult(false, `${t.userFinW} ${t.userFinN}/${t.userFinD}`);
+                    }
+
+                    // Если математически верно, проверяем, идеален ли вид (несократимая и правильная дробная часть)
+                    const g = getGCD(t.userFinN, t.userFinD);
+                    const isSimplified = (t.userFinN < t.userFinD) && (g === 1 || t.userFinN === 0);
+
+                    if (t.phase === 'final' && !isSimplified) {
+                        // Принимаем промежуточный ответ и предлагаем довести до ума!
+                        t.rawW = t.userFinW;
+                        t.rawN = t.userFinN;
+                        t.rawD = t.userFinD;
+                        t.phase = 'improve';
+                        renderMixedStep(t);
+                        return;
+                    }
+
+                    // На фазе improve требуем уже полностью сокращенный и выделенный вид
+                    isCorrect = isSimplified;
                     return handleResult(isCorrect, `${t.userFinW} ${t.userFinN}/${t.userFinD}`);
                 }
             }
@@ -1476,7 +1521,7 @@ function nextTask() {
                 const el = document.getElementById(t.phase === 'den' ? 'inp-mx-den' : t.phase === 'borrow' ? 'inp-mx-borrow' : `inp-mx-${state.inputFocus}`);
                 if (el) el.innerText = '?';
                 if (t.phase === 'nums') { if (state.inputFocus === 'n1') t.userN1 = null; else t.userN2 = null; }
-                if (t.phase === 'final') { if (state.inputFocus === 'fw') t.userFinW = null; if (state.inputFocus === 'fn') t.userFinN = null; if (state.inputFocus === 'fd') t.userFinD = null; }
+                (t.phase === 'final' || t.phase === 'improve') { if (state.inputFocus === 'fw') t.userFinW = null; if (state.inputFocus === 'fn') t.userFinN = null; if (state.inputFocus === 'fd') t.userFinD = null; }
             }
 			else { state.currentFactors = []; updateDisplay(); }
         }
