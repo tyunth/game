@@ -865,7 +865,7 @@ function login() {
                 id: 'fraction_add_sub',
                 theory: '<b>Сложение и вычитание дробей с разными знаменателями:</b><br>1. Найди общий знаменатель (лучше наименьший — НОК).<br>2. Умножь каждый числитель на дополнительный множитель.<br>3. Сложи или вычти числители, знаменатель оставь тем же.<br>4. Если можно — сократи дробь или выдели целую часть!',
                 generate: () => {
-                    const [d1, d2, lcm] = pickGoodDenominators();
+					let [d1, d2, lcm] = pickGoodDenominators();
                     const isAdd = Math.random() > 0.45;
                     let n1 = randomInt(1, d1 - 1);
                     let n2 = randomInt(1, d2 - 1);
@@ -1095,9 +1095,19 @@ function nextTask() {
                         <span class="frac-whole">${t.w1 - 1}</span>
                         <span class="frac-part"><div class="input-num input-active" id="inp-mx-borrow" style="min-width:55px; min-height:44px; font-size:1.7rem;">?</div><div class="frac-den">${t.commonDen}</div></span>
                     </div>`;
-            } else if (t.phase === 'final') {
+			} else if (t.phase === 'final') {
                 state.inputFocus = 'fw';
-                box.innerHTML = `<div style="font-size:0.95rem; color:var(--success); font-weight:bold; margin-bottom:8px;">Запиши итоговый ответ (если можно — сократи):</div>
+                const leftPreview = t.w1 > 0
+                    ? `<span class="frac-whole">${t.w1}</span><span class="frac-part"><span class="frac-num">${t.curN1}</span><span class="frac-den">${t.commonDen}</span></span>`
+                    : `<span class="frac-part"><span class="frac-num">${t.curN1}</span><span class="frac-den">${t.commonDen}</span></span>`;
+                const rightPreview = t.w2 > 0
+                    ? `<span class="frac-whole">${t.w2}</span><span class="frac-part"><span class="frac-num">${t.curN2}</span><span class="frac-den">${t.commonDen}</span></span>`
+                    : `<span class="frac-part"><span class="frac-num">${t.curN2}</span><span class="frac-den">${t.commonDen}</span></span>`;
+
+                box.innerHTML = `<div class="frac-block" style="font-size:1.8rem; color:var(--primary); margin-bottom:10px; background:#eff6ff; padding:6px 14px; border-radius:12px;">
+                        ${leftPreview} <span style="margin:0 8px;">${t.op}</span> ${rightPreview}
+                    </div>
+                    <div style="font-size:0.95rem; color:var(--success); font-weight:bold; margin-bottom:8px;">Запиши итоговый ответ (если можно — сократи):</div>
                     <div class="frac-block" style="font-size:2rem; align-items:center;">
                         <div class="input-whole input-active" id="inp-mx-fw" onclick="setMixedFocus('fw')" style="min-width:55px; min-height:55px; font-size:1.8rem; margin-right:6px;">?</div>
                         <div class="input-frac" style="font-size:1.6rem;">
@@ -1316,8 +1326,14 @@ function nextTask() {
                         if (t.usedNonLcm && !state.sessionFlags.includes('stubborn')) state.sessionFlags.push('stubborn');
                         return handleResult(true, val);
                     }
-                    t.phase = 'final'; state.currentInput = '';
+					t.phase = 'final'; state.currentInput = '';
                     document.getElementById('as-step-label').style.display = 'none';
+                    document.getElementById('as-work').innerHTML = `
+                        <span class="frac-part"><span class="frac-num">${exp1}</span><span class="frac-den">${t.chosenDen}</span></span>
+                        <span>${t.op}</span>
+                        <span class="frac-part"><span class="frac-num">${exp2}</span><span class="frac-den">${t.chosenDen}</span></span>
+                        <span>=</span>
+                        <span class="frac-part" style="color:var(--primary);"><span class="frac-num">${t.resNum}</span><span class="frac-den">${t.resDen}</span></span>`;
                     const fBox = document.getElementById('as-final-box');
                     fBox.style.display = 'flex';
                     if (t.resNum > t.resDen) {
