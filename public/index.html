@@ -120,62 +120,78 @@
             <button style="background:none; border:none; color:var(--primary); font-weight:bold; font-size:1.1rem; cursor:pointer;" onclick="showAchievements()">🏆</button>
         </div>
         
-        <div class="map-container">
-            <!-- АРХИВ -->
-            <details style="width: 100%; text-align: center; margin-bottom: 20px;">
-                <summary style="display: inline-block; background: white; color: var(--primary); font-weight: bold; padding: 10px 20px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; list-style: none;">📦 Пройденный материал</summary>
-                <div style="padding-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 40px;">
-                    <div class="map-level row2">
-                        <div class="topic-wrapper"><div class="topic-node" onclick="clickTopic('nod')">НОД</div><div class="topic-streak-badge" id="streak-nod">🔥 0</div></div>
-                        <div class="topic-wrapper"><div class="topic-node" onclick="clickTopic('nok')">НОК</div><div class="topic-streak-badge" id="streak-nok">🔥 0</div></div>
-                    </div>
-                    <div class="map-level row2">
-                        <div class="topic-wrapper"><div class="topic-node oval" onclick="clickTopic('factor')">Множители</div><div class="topic-streak-badge" id="streak-factor">🔥 0</div></div>
-                        <div class="topic-wrapper"><div class="topic-node oval" onclick="clickTopic('fraction_basics')">Дроби: Основы</div><div class="topic-streak-badge" id="streak-fraction_basics">🔥 0</div></div>
-                    </div>
-                </div>
-            </details>
-
-			<!-- АКТУАЛЬНЫЕ ТЕМЫ -->
-            <div class="map-level row2">
+		<div class="map-container">
+            <!-- АКТУАЛЬНЫЕ ТЕМЫ (3 УРОВНЯ) -->
+            <div class="map-level">
                 <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_simplify" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_simplify')">Сокращение</div>
-                    <div class="topic-streak-badge" id="streak-fraction_simplify">🔥 0</div>
-                </div>
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_simplify_hard" style="background: #8e44ad; border-color: #732d91;" onclick="clickTopic('fraction_simplify_hard')">Большое сокращение</div>
+                    <div class="topic-node oval" id="node-fraction_simplify_hard" style="background: #8e44ad; border-color: #732d91;" onclick="clickTopic('fraction_simplify_hard')">Сокращение дробей</div>
                     <div class="topic-streak-badge" id="streak-fraction_simplify_hard">🔥 0</div>
-                </div>
-            </div>
-
-            <div class="map-level row2">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_equiv" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_equiv')">Новый знаменатель</div>
-                    <div class="topic-streak-badge" id="streak-fraction_equiv">🔥 0</div>
-                </div>
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_compare')">Сравнение дробей</div>
-                    <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
-                </div>
-            </div>
-
-            <div class="map-level row2">
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-mixed_to_improper" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('mixed_to_improper')">В неправильную</div>
-                    <div class="topic-streak-badge" id="streak-mixed_to_improper">🔥 0</div>
-                </div>
-                <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-improper_to_mixed" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('improper_to_mixed')">Выделение целого</div>
-                    <div class="topic-streak-badge" id="streak-improper_to_mixed">🔥 0</div>
                 </div>
             </div>
 
             <div class="map-level">
                 <div class="topic-wrapper">
-                    <div class="topic-node oval" id="node-fraction_mult_cross" style="background: #e67e22; border-color: #d35400;" onclick="clickTopic('fraction_mult_cross')">Умножение и крест</div>
-                    <div class="topic-streak-badge" id="streak-fraction_mult_cross">🔥 0</div>
+                    <div class="topic-node oval" id="node-fraction_add_sub" style="background: #2980b9; border-color: #1f618d;" onclick="clickTopic('fraction_add_sub')">Сложение и вычитание</div>
+                    <div class="topic-streak-badge" id="streak-fraction_add_sub">🔥 0</div>
                 </div>
             </div>
+
+            <div class="map-level">
+                <div class="topic-wrapper">
+                    <div class="topic-node oval" id="node-mixed_add_sub" style="background: #16a085; border-color: #117a65;" onclick="clickTopic('mixed_add_sub')">Смешанные числа (+ / −)</div>
+                    <div class="topic-streak-badge" id="streak-mixed_add_sub">🔥 0</div>
+                </div>
+            </div>
+
+            <!-- АРХИВ -->
+            <details style="width: 100%; text-align: center; margin-top: 10px;">
+                <summary style="display: inline-block; background: white; color: var(--primary); font-weight: bold; padding: 10px 20px; border-radius: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; list-style: none;">📦 Пройденный материал</summary>
+                <div style="padding-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 35px;">
+                    <div class="map-level">
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-fraction_mult_cross" style="background: #e67e22; border-color: #d35400;" onclick="clickTopic('fraction_mult_cross')">Умножение и крест</div>
+                            <div class="topic-streak-badge" id="streak-fraction_mult_cross">🔥 0</div>
+                        </div>
+                    </div>
+                    <div class="map-level row2">
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-mixed_to_improper" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('mixed_to_improper')">В неправильную</div>
+                            <div class="topic-streak-badge" id="streak-mixed_to_improper">🔥 0</div>
+                        </div>
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-improper_to_mixed" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('improper_to_mixed')">Выделение целого</div>
+                            <div class="topic-streak-badge" id="streak-improper_to_mixed">🔥 0</div>
+                        </div>
+                    </div>
+                    <div class="map-level row2">
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-fraction_equiv" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_equiv')">Новый знаменатель</div>
+                            <div class="topic-streak-badge" id="streak-fraction_equiv">🔥 0</div>
+                        </div>
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-fraction_compare" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_compare')">Сравнение дробей</div>
+                            <div class="topic-streak-badge" id="streak-fraction_compare">🔥 0</div>
+                        </div>
+                    </div>
+                    <div class="map-level row2">
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-fraction_simplify" style="background: #9b59b6; border-color: #8e44ad;" onclick="clickTopic('fraction_simplify')">Простое сокращение</div>
+                            <div class="topic-streak-badge" id="streak-fraction_simplify">🔥 0</div>
+                        </div>
+                        <div class="topic-wrapper">
+                            <div class="topic-node oval" id="node-fraction_basics" onclick="clickTopic('fraction_basics')">Дроби: Основы</div>
+                            <div class="topic-streak-badge" id="streak-fraction_basics">🔥 0</div>
+                        </div>
+                    </div>
+                    <div class="map-level row2">
+                        <div class="topic-wrapper"><div class="topic-node" onclick="clickTopic('nod')">НОД</div><div class="topic-streak-badge" id="streak-nod">🔥 0</div></div>
+                        <div class="topic-wrapper"><div class="topic-node" onclick="clickTopic('nok')">НОК</div><div class="topic-streak-badge" id="streak-nok">🔥 0</div></div>
+                    </div>
+                    <div class="map-level">
+                        <div class="topic-wrapper"><div class="topic-node oval" onclick="clickTopic('factor')">Множители</div><div class="topic-streak-badge" id="streak-factor">🔥 0</div></div>
+                    </div>
+                </div>
+            </details>
 
             <!-- КОМАНДНЫЙ ЗАЧЕТ -->
             <div class="team-panel" style="margin-top: 20px;">
@@ -286,7 +302,7 @@
     <script>
         // БАЗА ДАННЫХ И СОСТОЯНИЯ
         let allStudents = [];
-        let state = { studentId: null, deviceHash: null, mistakes: 0, locked: false, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [] };
+        let state = { studentId: null, deviceHash: null, mistakes: 0, locked: false, currentTopic: null, currentTask: null, hearts: 3, score: 0, hintsUsed: 0, currentInput: '', currentFactors: [], startTime: 0, achievements: [], sessionFlags: [], borrowStreak: 0, mixedQueue: [] };
         
         let ACH_CATALOG = {};
         function loadAchievementsCatalog() { fetch('/api/achievements').then(r => r.json()).then(list => { ACH_CATALOG = {}; list.forEach(a => { ACH_CATALOG[a.id] = a; }); }).catch(() => {}); }
@@ -360,7 +376,7 @@ function login() {
 
         // --- ЛОГИКА СТАТИСТИКИ ТЕМ ---
         let topicStats = {};
-        const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение дробей', fraction_simplify: 'Сокращение', fraction_simplify_hard: 'Сложное сокращение', fraction_mult_cross: 'Умножение (Крест)' };
+        const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение дробей', fraction_simplify: 'Простое сокращение', fraction_simplify_hard: 'Сокращение дробей', fraction_mult_cross: 'Умножение (Крест)', fraction_add_sub: 'Сложение и вычитание', mixed_add_sub: 'Смешанные числа (+ / −)' };
         
 		function fetchTopicStats() {
             fetch('/api/topic-stats').then(r => r.json()).then(d => topicStats = d).catch(()=>{});
@@ -439,7 +455,7 @@ function login() {
                 updateLevelUI(data.xp);
                 state.achievements = data.achievements;
                 
-                ['factor', 'nod', 'nok', 'fraction_basics','fraction_simplify', 'fraction_simplify_hard', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare', 'fraction_mult_cross'].forEach(topic => {
+                ['factor', 'nod', 'nok', 'fraction_basics', 'fraction_simplify', 'fraction_simplify_hard', 'mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare', 'fraction_mult_cross', 'fraction_add_sub', 'mixed_add_sub'].forEach(topic => {
                     const badge = document.getElementById(`streak-${topic}`);
                     if (badge) badge.innerText = `🔥 ${data.topicStreaks[topic] || 0}`;
                 });
@@ -525,6 +541,19 @@ function login() {
                 svg += `</svg>`;
             }
             return svg;
+        }
+
+		function pickGoodDenominators(maxLcm = 60) {
+            const pool = [6, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 24, 25, 28, 30, 32, 36, 40, 42, 45, 48, 60].filter(x => x <= maxLcm);
+            const lcm = pool[randomInt(0, pool.length - 1)];
+            const divs = [];
+            for (let i = 2; i < lcm; i++) if (lcm % i === 0) divs.push(i);
+            for (let attempt = 0; attempt < 50; attempt++) {
+                const d1 = divs[randomInt(0, divs.length - 1)];
+                const d2 = (Math.random() < 0.2) ? lcm : divs[randomInt(0, divs.length - 1)];
+                if (d1 !== d2 && (d1 * d2) / getGCD(d1, d2) === lcm) return [d1, d2, lcm];
+            }
+            return [4, 6, 12];
         }
 
         // --- БАЗА ТЕМ ---
@@ -831,6 +860,126 @@ function login() {
                     };
                 }
             }
+			,
+            'fraction_add_sub': {
+                id: 'fraction_add_sub',
+                theory: '<b>Сложение и вычитание дробей с разными знаменателями:</b><br>1. Найди общий знаменатель (лучше наименьший — НОК).<br>2. Умножь каждый числитель на дополнительный множитель.<br>3. Сложи или вычти числители, знаменатель оставь тем же.<br>4. Если можно — сократи дробь или выдели целую часть!',
+                generate: () => {
+                    const [d1, d2, lcm] = pickGoodDenominators();
+                    const isAdd = Math.random() > 0.45;
+                    let n1 = randomInt(1, d1 - 1);
+                    let n2 = randomInt(1, d2 - 1);
+                    if (!isAdd && (n1 / d1) <= (n2 / d2)) {
+                        [n1, d1, n2, d2] = [n2, d2, n1, d1];
+                        if ((n1 / d1) === (n2 / d2)) n1 = Math.min(d1 - 1, n1 + 1);
+                    }
+                    const op = isAdd ? '+' : '−';
+                    const t = {
+                        type: 'fraction_add_sub',
+                        n1, d1, n2, d2, lcm, op, isAdd,
+                        phase: 'den',
+                        chosenDen: null, usedNonLcm: false,
+                        userNum1: null, userNum2: null,
+                        resNum: null, resDen: null,
+                        finalPhase: null, // 'reduce' | 'mixed'
+                        userFinW: null, userFinN: null, userFinD: null,
+                        text: isAdd ? 'Сложи дроби:' : 'Вычти дроби:',
+                        html: `<div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+                            <div id="as-toast" style="display:none; background:#fef9e7; border:1px solid #f39c12; color:#b9770e; padding:8px 12px; border-radius:10px; font-size:0.85rem; margin-bottom:10px; text-align:center;"></div>
+                            <div id="as-work" class="frac-block" style="font-size:2.2rem; flex-wrap:wrap; justify-content:center; gap:8px;">
+                                <span class="frac-part"><span class="frac-num">${n1}</span><span class="frac-den">${d1}</span></span>
+                                <span>${op}</span>
+                                <span class="frac-part"><span class="frac-num">${n2}</span><span class="frac-den">${d2}</span></span>
+                                <span>=</span>
+                                <span class="frac-part">
+                                    <span class="frac-num" style="color:var(--muted);">?</span>
+                                    <div class="input-active" id="inp-as-den" style="min-width:55px; min-height:45px; border:2px dashed var(--primary); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.8rem; margin-top:4px;">?</div>
+                                </span>
+                            </div>
+                            <div id="as-step-label" style="margin-top:12px; font-size:0.95rem; color:var(--muted);">Шаг 1: Введи общий знаменатель</div>
+                            <div id="as-final-box" style="display:none; flex-direction:column; align-items:center; margin-top:12px; border-top:2px dashed #e2e8f0; padding-top:12px; width:100%;"></div>
+                        </div>`,
+                        hint: `Подбери число, которое делится и на ${d1}, и на ${d2}. Лучше всего подойдёт НОК(${d1}, ${d2}) = ${lcm}.`
+                    };
+                    return t;
+                }
+            },
+            'mixed_add_sub': {
+                id: 'mixed_add_sub',
+                theory: '<b>Сложение и вычитание смешанных чисел:</b><br>• Складываем отдельно целые части и отдельно дробные.<br>• При вычитании: если дробная часть первого числа меньше дробной части второго, <b>займи 1 у целой части</b> (например: 4 2/9 = 3 + 1 + 2/9 = 3 11/9).<br>• Если вычитаешь дробь из целого числа, распиши его как смешанное (5 = 4 7/7).',
+                generate: () => {
+                    if (!state.mixedQueue || state.mixedQueue.length === 0) {
+                        state.mixedQueue = ['mixed_frac', 'whole_sub', 'mixed_add_carry', 'mixed_sub_borrow', 'mixed_sub_borrow'].sort(() => Math.random() - 0.5);
+                    }
+                    const mode = state.mixedQueue.pop();
+                    let w1 = 0, n1 = 0, d1 = 1, w2 = 0, n2 = 0, d2 = 1, isAdd = true, needsBorrow = false;
+
+                    if (mode === 'mixed_frac') {
+                        // Смешанное +/- обыкновенная дробь
+                        [d1, d2] = pickGoodDenominators(24);
+                        w1 = randomInt(2, 6); w2 = 0;
+                        isAdd = Math.random() > 0.5;
+                        n1 = randomInt(1, d1 - 1); n2 = randomInt(1, d2 - 1);
+                        if (!isAdd && (n1 / d1) < (n2 / d2)) [n1, d1, n2, d2] = [n2, d2, n1, d1];
+                    } else if (mode === 'whole_sub') {
+                        // Целое - смешанное (обязательный заём)
+                        isAdd = false; needsBorrow = true;
+                        d2 = randomInt(3, 12); n2 = randomInt(1, d2 - 1);
+                        w2 = randomInt(1, 4); w1 = w2 + randomInt(1, 4);
+                        n1 = 0; d1 = d2;
+                    } else if (mode === 'mixed_add_carry') {
+                        // Смешанное + смешанное с переходом через единицу
+                        [d1, d2] = pickGoodDenominators(24);
+                        w1 = randomInt(1, 5); w2 = randomInt(1, 5);
+                        n1 = randomInt(Math.ceil(d1 / 2), d1 - 1);
+                        n2 = randomInt(Math.ceil(d2 / 2), d2 - 1);
+                        isAdd = true;
+                    } else {
+                        // Смешанное - смешанное с заёмом единицы
+                        [d1, d2] = pickGoodDenominators(24);
+                        w2 = randomInt(1, 4); w1 = w2 + randomInt(1, 4);
+                        n1 = randomInt(1, Math.max(1, Math.floor(d1 / 2)));
+                        n2 = randomInt(Math.min(d2 - 1, Math.floor(d2 / 2) + 1), d2 - 1);
+                        if ((n1 / d1) >= (n2 / d2)) { n1 = 1; n2 = d2 - 1; }
+                        isAdd = false; needsBorrow = true;
+                    }
+
+                    const lcm = (d1 * d2) / getGCD(d1, d2);
+                    const sameDen = (d1 === d2);
+                    const op = isAdd ? '+' : '−';
+
+                    const fmtLeft = w1 > 0
+                        ? (n1 > 0 ? `<span class="frac-whole">${w1}</span><span class="frac-part"><span class="frac-num">${n1}</span><span class="frac-den">${d1}</span></span>` : `<span class="frac-whole">${w1}</span>`)
+                        : `<span class="frac-part"><span class="frac-num">${n1}</span><span class="frac-den">${d1}</span></span>`;
+                    const fmtRight = w2 > 0
+                        ? `<span class="frac-whole">${w2}</span><span class="frac-part"><span class="frac-num">${n2}</span><span class="frac-den">${d2}</span></span>`
+                        : `<span class="frac-part"><span class="frac-num">${n2}</span><span class="frac-den">${d2}</span></span>`;
+
+                    const startPhase = sameDen ? (needsBorrow ? 'borrow' : 'final') : 'den';
+
+                    return {
+                        type: 'mixed_add_sub',
+                        mode, w1, n1, d1, w2, n2, d2, lcm, isAdd, op, needsBorrow,
+                        phase: startPhase,
+                        commonDen: sameDen ? d1 : null,
+                        curN1: sameDen ? n1 : null,
+                        curN2: sameDen ? n2 : null,
+                        userN1: null, userN2: null,
+                        userFinW: null, userFinN: null, userFinD: null,
+                        text: isAdd ? 'Вычисли сумму:' : 'Вычисли разность:',
+                        html: `<div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+                            <div id="mx-toast" style="display:none; background:#fef9e7; border:1px solid #f39c12; color:#b9770e; padding:8px 12px; border-radius:10px; font-size:0.85rem; margin-bottom:10px; text-align:center;"></div>
+                            <div id="mx-expr" class="frac-block" style="font-size:2.1rem; flex-wrap:wrap; justify-content:center; gap:8px;">
+                                ${fmtLeft} <span>${op}</span> ${fmtRight}
+                            </div>
+                            <div id="mx-work" style="margin-top:15px; width:100%; display:flex; flex-direction:column; align-items:center;"></div>
+                        </div>`,
+                        hint: needsBorrow
+                            ? `Дробная часть первого числа меньше второго. Займи 1 у целого числа ${w1}: получится ${w1 - 1} целых и добавится знаменатель в числитель.`
+                            : `Сначала приведи дробные части к общему знаменателю ${lcm}, затем посчитай отдельно целые и дробные части.`
+                    };
+                }
+            }
 			};
 
         
@@ -838,6 +987,7 @@ function login() {
 		function selectTopic(id) {
             state.currentTopic = TOPICS[id];
             state.hearts = 3; state.score = 0; state.hintsUsed = 0;
+			state.sessionFlags = []; state.borrowStreak = 0; state.mixedQueue = [];
             updateHearts(); document.getElementById('ui-score').innerText = '0/5';
             
             document.getElementById('keyboard-standard').style.display = 'none';
@@ -886,8 +1036,9 @@ function nextTask() {
                 state.inputFocus = 'num'; 
                 ansCont.innerHTML = `<div class="input-frac"><div class="input-num input-active" id="inp-read-num" onclick="setFocus('num')">?</div><div class="input-den" id="inp-read-den" onclick="setFocus('den')">?</div></div>`;
             }
-            else if (['mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare', 'fraction_simplify_step', 'fraction_cross'].includes(t.type)) {
+			else if (['mixed_to_improper', 'improper_to_mixed', 'fraction_equiv', 'fraction_compare', 'fraction_simplify_step', 'fraction_cross', 'fraction_add_sub', 'mixed_add_sub'].includes(t.type)) {
                 ansCont.innerHTML = t.html;
+                if (t.type === 'mixed_add_sub') renderMixedStep(t);
             }
             else {
                 ansCont.style.borderBottom = '3px solid var(--primary)';
@@ -918,6 +1069,57 @@ function nextTask() {
                 state.currentInput = '';
                 document.getElementById('inp-cross-div').innerText = '?';
             }
+        }
+		
+		function renderMixedStep(t) {
+            const box = document.getElementById('mx-work');
+            state.currentInput = '';
+            if (t.phase === 'den') {
+                box.innerHTML = `<div style="font-size:0.95rem; color:var(--muted); margin-bottom:8px;">Шаг 1: Общий знаменатель для ${t.d1} и ${t.d2}</div>
+                    <div class="input-active" id="inp-mx-den" style="width:75px; height:50px; font-size:1.8rem; display:flex; align-items:center; justify-content:center; border:2px dashed var(--primary); border-radius:10px;">?</div>`;
+            } else if (t.phase === 'nums') {
+                state.inputFocus = 'n1';
+                const w1Html = t.w1 > 0 ? `<span class="frac-whole">${t.w1}</span>` : '';
+                const w2Html = t.w2 > 0 ? `<span class="frac-whole">${t.w2}</span>` : '';
+                box.innerHTML = `<div style="font-size:0.95rem; color:var(--muted); margin-bottom:8px;">Шаг 2: Новые числители (знаменатель ${t.commonDen})</div>
+                    <div class="frac-block" style="font-size:2rem;">
+                        ${w1Html}<span class="frac-part"><div class="input-num input-active" id="inp-mx-n1" onclick="setMixedFocus('n1')" style="min-width:50px; min-height:42px; font-size:1.6rem;">?</div><div class="frac-den">${t.commonDen}</div></span>
+                        <span style="margin:0 8px;">${t.op}</span>
+                        ${w2Html}<span class="frac-part"><div class="input-num" id="inp-mx-n2" onclick="setMixedFocus('n2')" style="min-width:50px; min-height:42px; font-size:1.6rem;">?</div><div class="frac-den">${t.commonDen}</div></span>
+                    </div>`;
+            } else if (t.phase === 'borrow') {
+                const leftStr = t.n1 > 0 ? `${t.w1} <span class="frac-part"><span class="frac-num">${t.curN1}</span><span class="frac-den">${t.commonDen}</span></span>` : `${t.w1}`;
+                box.innerHTML = `<div style="font-size:0.95rem; color:#d35400; font-weight:bold; margin-bottom:8px;">Занимаем 1 у целого числа ${t.w1}:</div>
+                    <div class="frac-block" style="font-size:2rem;">
+                        ${leftStr} <span style="margin:0 10px;">=</span>
+                        <span class="frac-whole">${t.w1 - 1}</span>
+                        <span class="frac-part"><div class="input-num input-active" id="inp-mx-borrow" style="min-width:55px; min-height:44px; font-size:1.7rem;">?</div><div class="frac-den">${t.commonDen}</div></span>
+                    </div>`;
+            } else if (t.phase === 'final') {
+                state.inputFocus = 'fw';
+                box.innerHTML = `<div style="font-size:0.95rem; color:var(--success); font-weight:bold; margin-bottom:8px;">Запиши итоговый ответ (если можно — сократи):</div>
+                    <div class="frac-block" style="font-size:2rem; align-items:center;">
+                        <div class="input-whole input-active" id="inp-mx-fw" onclick="setMixedFocus('fw')" style="min-width:55px; min-height:55px; font-size:1.8rem; margin-right:6px;">?</div>
+                        <div class="input-frac" style="font-size:1.6rem;">
+                            <div class="input-num" id="inp-mx-fn" onclick="setMixedFocus('fn')" style="min-width:50px; min-height:42px;">?</div>
+                            <div class="input-den" id="inp-mx-fd" onclick="setMixedFocus('fd')" style="min-width:50px; min-height:42px;">?</div>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function setMixedFocus(f) {
+            state.inputFocus = f; state.currentInput = '';
+            document.querySelectorAll('#mx-work .input-active').forEach(e => e.classList.remove('input-active'));
+            const el = document.getElementById('inp-mx-' + f);
+            if (el) el.classList.add('input-active');
+        }
+
+        function setAddSubFocus(f) {
+            state.inputFocus = f; state.currentInput = '';
+            document.querySelectorAll('#as-work .input-active, #as-final-box .input-active').forEach(e => e.classList.remove('input-active'));
+            const el = document.getElementById('inp-as-' + f);
+            if (el) el.classList.add('input-active');
         }
 
         function setFocus(field) {
@@ -978,6 +1180,38 @@ function nextTask() {
                     } else t.userDen = parseInt(state.currentInput);
                 }
             }
+			else if (t.type === 'fraction_add_sub') {
+                if (state.currentInput.length < 3) state.currentInput += num;
+                if (t.phase === 'den') document.getElementById('inp-as-den').innerText = state.currentInput;
+                else if (t.phase === 'nums') {
+                    document.getElementById(`inp-as-${state.inputFocus}`).innerText = state.currentInput;
+                    if (state.inputFocus === 'n1') t.userNum1 = parseInt(state.currentInput);
+                    else t.userNum2 = parseInt(state.currentInput);
+                } else if (t.phase === 'sum') {
+                    document.getElementById('inp-as-sum').innerText = state.currentInput;
+                } else if (t.phase === 'final') {
+                    document.getElementById(`inp-as-${state.inputFocus}`).innerText = state.currentInput;
+                    if (state.inputFocus === 'fw') t.userFinW = parseInt(state.currentInput);
+                    if (state.inputFocus === 'fn') t.userFinN = parseInt(state.currentInput);
+                    if (state.inputFocus === 'fd') t.userFinD = parseInt(state.currentInput);
+                }
+            }
+            else if (t.type === 'mixed_add_sub') {
+                if (state.currentInput.length < 3) state.currentInput += num;
+                if (t.phase === 'den') document.getElementById('inp-mx-den').innerText = state.currentInput;
+                else if (t.phase === 'nums') {
+                    document.getElementById(`inp-mx-${state.inputFocus}`).innerText = state.currentInput;
+                    if (state.inputFocus === 'n1') t.userN1 = parseInt(state.currentInput);
+                    else t.userN2 = parseInt(state.currentInput);
+                } else if (t.phase === 'borrow') {
+                    document.getElementById('inp-mx-borrow').innerText = state.currentInput;
+                } else if (t.phase === 'final') {
+                    document.getElementById(`inp-mx-${state.inputFocus}`).innerText = state.currentInput;
+                    if (state.inputFocus === 'fw') t.userFinW = parseInt(state.currentInput);
+                    if (state.inputFocus === 'fn') t.userFinN = parseInt(state.currentInput);
+                    if (state.inputFocus === 'fd') t.userFinD = parseInt(state.currentInput);
+                }
+            }
             else {
                 if (state.currentInput.length < 5) state.currentInput += num; 
                 updateDisplay(); 
@@ -1033,6 +1267,149 @@ function nextTask() {
                     return handleResult(isCorrect, val);
                 }
             }
+			
+			if (t.type === 'fraction_add_sub') {
+                if (t.phase === 'den') {
+                    const d = parseInt(val);
+                    if (!d || d < t.lcm || d % t.d1 !== 0 || d % t.d2 !== 0) return handleResult(false, val);
+                    t.chosenDen = d;
+                    if (d > t.lcm) {
+                        t.usedNonLcm = true;
+                        const toast = document.getElementById('as-toast');
+                        toast.style.display = 'block';
+                        toast.innerText = `💡 Можно было взять ${t.lcm} — считать было бы проще, но с ${d} тоже сработает!`;
+                    }
+                    t.phase = 'nums'; state.currentInput = ''; state.inputFocus = 'n1';
+                    document.getElementById('as-step-label').innerText = 'Шаг 2: Введи новые числители';
+                    document.getElementById('as-work').innerHTML = `
+                        <span class="frac-part"><span class="frac-num">${t.n1}</span><span class="frac-den">${t.d1}</span></span>
+                        <span>${t.op}</span>
+                        <span class="frac-part"><span class="frac-num">${t.n2}</span><span class="frac-den">${t.d2}</span></span>
+                        <span>=</span>
+                        <span class="frac-part"><div class="input-num input-active" id="inp-as-n1" onclick="setAddSubFocus('n1')" style="min-width:50px; min-height:42px; font-size:1.6rem;">?</div><div class="frac-den">${d}</div></span>
+                        <span>${t.op}</span>
+                        <span class="frac-part"><div class="input-num" id="inp-as-n2" onclick="setAddSubFocus('n2')" style="min-width:50px; min-height:42px; font-size:1.6rem;">?</div><div class="frac-den">${d}</div></span>`;
+                    return;
+                }
+                if (t.phase === 'nums') {
+                    if (!t.userNum1 || !t.userNum2) { if (t.userNum1 && !t.userNum2) setAddSubFocus('n2'); return; }
+                    const exp1 = t.n1 * (t.chosenDen / t.d1), exp2 = t.n2 * (t.chosenDen / t.d2);
+                    if (t.userNum1 !== exp1 || t.userNum2 !== exp2) return handleResult(false, `${t.userNum1}, ${t.userNum2}`);
+                    t.phase = 'sum'; state.currentInput = '';
+                    document.getElementById('as-step-label').innerText = `Шаг 3: ${t.isAdd ? 'Сложи' : 'Вычти'} числители`;
+                    document.getElementById('as-work').innerHTML = `
+                        <span class="frac-part"><span class="frac-num">${exp1}</span><span class="frac-den">${t.chosenDen}</span></span>
+                        <span>${t.op}</span>
+                        <span class="frac-part"><span class="frac-num">${exp2}</span><span class="frac-den">${t.chosenDen}</span></span>
+                        <span>=</span>
+                        <span class="frac-part"><div class="input-num input-active" id="inp-as-sum" style="min-width:55px; min-height:44px; font-size:1.7rem;">?</div><div class="frac-den">${t.chosenDen}</div></span>`;
+                    return;
+                }
+                if (t.phase === 'sum') {
+                    const s = parseInt(val);
+                    const exp1 = t.n1 * (t.chosenDen / t.d1), exp2 = t.n2 * (t.chosenDen / t.d2);
+                    const expectedSum = t.isAdd ? (exp1 + exp2) : (exp1 - exp2);
+                    if (s !== expectedSum) return handleResult(false, val);
+                    t.resNum = expectedSum; t.resDen = t.chosenDen;
+                    const g = getGCD(t.resNum, t.resDen);
+                    if (t.resNum < t.resDen && g === 1) {
+                        if (t.usedNonLcm && !state.sessionFlags.includes('stubborn')) state.sessionFlags.push('stubborn');
+                        return handleResult(true, val);
+                    }
+                    t.phase = 'final'; state.currentInput = '';
+                    document.getElementById('as-step-label').style.display = 'none';
+                    const fBox = document.getElementById('as-final-box');
+                    fBox.style.display = 'flex';
+                    if (t.resNum > t.resDen) {
+                        t.finalPhase = 'mixed'; state.inputFocus = 'fw';
+                        fBox.innerHTML = `<div style="font-size:0.95rem; color:var(--primary); font-weight:bold; margin-bottom:8px;">Дробь неправильная! Выдели целую часть (и сократи, если нужно):</div>
+                            <div class="frac-block" style="font-size:2rem; align-items:center;">
+                                <div class="input-whole input-active" id="inp-as-fw" onclick="setAddSubFocus('fw')" style="min-width:52px; min-height:52px; font-size:1.7rem; margin-right:6px;">?</div>
+                                <div class="input-frac" style="font-size:1.5rem;">
+                                    <div class="input-num" id="inp-as-fn" onclick="setAddSubFocus('fn')" style="min-width:48px; min-height:40px;">?</div>
+                                    <div class="input-den" id="inp-as-fd" onclick="setAddSubFocus('fd')" style="min-width:48px; min-height:40px;">?</div>
+                                </div>
+                            </div>`;
+                    } else {
+                        t.finalPhase = 'reduce'; state.inputFocus = 'fn';
+                        fBox.innerHTML = `<div style="font-size:0.95rem; color:var(--primary); font-weight:bold; margin-bottom:8px;">Дробь сократимая! Сократи до конца:</div>
+                            <div class="input-frac" style="font-size:1.6rem;">
+                                <div class="input-num input-active" id="inp-as-fn" onclick="setAddSubFocus('fn')" style="min-width:52px; min-height:44px;">?</div>
+                                <div class="input-den" id="inp-as-fd" onclick="setAddSubFocus('fd')" style="min-width:52px; min-height:44px;">?</div>
+                            </div>`;
+                    }
+                    return;
+                }
+                if (t.phase === 'final') {
+                    const g = getGCD(t.resNum, t.resDen);
+                    const redN = t.resNum / g, redD = t.resDen / g;
+                    if (t.finalPhase === 'reduce') {
+                        if (!t.userFinN || !t.userFinD) { if (t.userFinN && !t.userFinD) setAddSubFocus('fd'); return; }
+                        isCorrect = (t.userFinN === redN && t.userFinD === redD);
+                    } else {
+                        if (!t.userFinW || !t.userFinN || !t.userFinD) {
+                            if (t.userFinW && !t.userFinN) setAddSubFocus('fn');
+                            else if (t.userFinN && !t.userFinD) setAddSubFocus('fd');
+                            return;
+                        }
+                        const expW = Math.floor(redN / redD), expN = redN % redD;
+                        isCorrect = (t.userFinW === expW && t.userFinN === expN && t.userFinD === redD);
+                    }
+                    if (isCorrect && t.usedNonLcm && !state.sessionFlags.includes('stubborn')) state.sessionFlags.push('stubborn');
+                    return handleResult(isCorrect, val);
+                }
+            }
+
+            if (t.type === 'mixed_add_sub') {
+                if (t.phase === 'den') {
+                    const d = parseInt(val);
+                    if (!d || d < t.lcm || d % t.d1 !== 0 || d % t.d2 !== 0) return handleResult(false, val);
+                    t.commonDen = d;
+                    if (d > t.lcm) {
+                        const toast = document.getElementById('mx-toast');
+                        toast.style.display = 'block';
+                        toast.innerText = `💡 Можно было взять ${t.lcm}, но с ${d} тоже решим!`;
+                    }
+                    t.phase = 'nums';
+                    renderMixedStep(t);
+                    return;
+                }
+                if (t.phase === 'nums') {
+                    if (!t.userN1 || !t.userN2) { if (t.userN1 && !t.userN2) setMixedFocus('n2'); return; }
+                    const exp1 = t.n1 * (t.commonDen / t.d1), exp2 = t.n2 * (t.commonDen / t.d2);
+                    if (t.userN1 !== exp1 || t.userN2 !== exp2) return handleResult(false, `${t.userN1}, ${t.userN2}`);
+                    t.curN1 = exp1; t.curN2 = exp2;
+                    t.phase = (!t.isAdd && t.curN1 < t.curN2) ? 'borrow' : 'final';
+                    renderMixedStep(t);
+                    return;
+                }
+                if (t.phase === 'borrow') {
+                    const b = parseInt(val);
+                    const expected = t.curN1 + t.commonDen;
+                    if (b !== expected) { state.borrowStreak = 0; return handleResult(false, val); }
+                    state.borrowStreak++;
+                    if (state.borrowStreak >= 3 && !state.sessionFlags.includes('accountant')) state.sessionFlags.push('accountant');
+                    t.w1 -= 1; t.curN1 = expected;
+                    t.phase = 'final';
+                    renderMixedStep(t);
+                    return;
+                }
+                if (t.phase === 'final') {
+                    if (!t.userFinW || !t.userFinN || !t.userFinD) {
+                        if (t.userFinW && !t.userFinN) setMixedFocus('fn');
+                        else if (t.userFinN && !t.userFinD) setMixedFocus('fd');
+                        return;
+                    }
+                    const totalNum = t.isAdd
+                        ? ((t.w1 + t.w2) * t.commonDen + t.curN1 + t.curN2)
+                        : ((t.w1 - t.w2) * t.commonDen + t.curN1 - t.curN2);
+                    const g = getGCD(totalNum, t.commonDen);
+                    const redN = totalNum / g, redD = t.commonDen / g;
+                    const expW = Math.floor(redN / redD), expN = redN % redD;
+                    isCorrect = (t.userFinW === expW && t.userFinN === expN && t.userFinD === redD);
+                    return handleResult(isCorrect, `${t.userFinW} ${t.userFinN}/${t.userFinD}`);
+                }
+            }
 
             if (t.type === 'fraction_constructor') { const filled = document.querySelectorAll('.svg-part.filled').length; isCorrect = (filled === t.answer); val = `Закрашено ${filled}`; } 
             else if (t.type === 'fraction_read') { 
@@ -1072,7 +1449,20 @@ function nextTask() {
             else if (t.type === 'fraction_cross') {
                 if(t.phase === 'cross') document.getElementById('inp-cross-div').innerText = '?';
                 else { document.getElementById(`c-fin-${state.inputFocus.charAt(0)}`).innerText = '?'; if(state.inputFocus==='num') t.userNum=null; else t.userDen=null; }
-            } else { state.currentFactors = []; updateDisplay(); }
+            } 
+			else if (t.type === 'fraction_add_sub') {
+                const el = document.getElementById(t.phase === 'den' ? 'inp-as-den' : t.phase === 'sum' ? 'inp-as-sum' : `inp-as-${state.inputFocus}`);
+                if (el) el.innerText = '?';
+                if (t.phase === 'nums') { if (state.inputFocus === 'n1') t.userNum1 = null; else t.userNum2 = null; }
+                if (t.phase === 'final') { if (state.inputFocus === 'fw') t.userFinW = null; if (state.inputFocus === 'fn') t.userFinN = null; if (state.inputFocus === 'fd') t.userFinD = null; }
+            }
+            else if (t.type === 'mixed_add_sub') {
+                const el = document.getElementById(t.phase === 'den' ? 'inp-mx-den' : t.phase === 'borrow' ? 'inp-mx-borrow' : `inp-mx-${state.inputFocus}`);
+                if (el) el.innerText = '?';
+                if (t.phase === 'nums') { if (state.inputFocus === 'n1') t.userN1 = null; else t.userN2 = null; }
+                if (t.phase === 'final') { if (state.inputFocus === 'fw') t.userFinW = null; if (state.inputFocus === 'fn') t.userFinN = null; if (state.inputFocus === 'fd') t.userFinD = null; }
+            }
+			else { state.currentFactors = []; updateDisplay(); }
         }
         
         function updateDisplay() {
@@ -1113,7 +1503,9 @@ function nextTask() {
             if (t.type === 'fraction_compare') errEl = document.getElementById('inp-compare');
             if (t.type === 'fraction_simplify_step') errEl = document.getElementById('inp-step-div');
             if (t.type === 'fraction_cross') errEl = t.phase === 'cross' ? document.getElementById('inp-cross-div') : document.getElementById('c-fin-n');
-            
+            if (t.type === 'fraction_add_sub') errEl = document.getElementById(t.phase === 'den' ? 'inp-as-den' : t.phase === 'sum' ? 'inp-as-sum' : `inp-as-${state.inputFocus}`) || errEl;
+            if (t.type === 'mixed_add_sub') errEl = document.getElementById(t.phase === 'den' ? 'inp-mx-den' : t.phase === 'borrow' ? 'inp-mx-borrow' : `inp-mx-${state.inputFocus}`) || errEl;
+			
             errEl.classList.add('error-shake');
             document.getElementById('ui-retry').innerText = 'Попробуй ещё раз';
             
@@ -1146,7 +1538,21 @@ function nextTask() {
                     document.getElementById('c-fin-n').innerText = t.state.n0 * t.state.n1; document.getElementById('c-fin-d').innerText = t.state.d0 * t.state.d1;
                     document.getElementById('c-fin-n').classList.add('correct'); document.getElementById('c-fin-d').classList.add('correct');
                 } else document.getElementById('ui-retry').innerText = `Нужно было найти общий делитель`;
-            } else {
+            } 
+			else if (t.type === 'fraction_add_sub') {
+                const num = t.isAdd ? (t.n1 * (t.lcm / t.d1) + t.n2 * (t.lcm / t.d2)) : (t.n1 * (t.lcm / t.d1) - t.n2 * (t.lcm / t.d2));
+                const g = getGCD(num, t.lcm), rn = num / g, rd = t.lcm / g;
+                const ansStr = rn > rd ? `${Math.floor(rn / rd)} ${rn % rd}/${rd}` : `${rn}/${rd}`;
+                document.getElementById('ui-retry').innerText = `Правильный ответ: ${ansStr}`;
+            } else if (t.type === 'mixed_add_sub') {
+                const total = t.isAdd
+                    ? ((t.w1 + t.w2) * t.lcm + t.n1 * (t.lcm / t.d1) + t.n2 * (t.lcm / t.d2))
+                    : ((t.w1 - t.w2) * t.lcm + t.n1 * (t.lcm / t.d1) - t.n2 * (t.lcm / t.d2));
+                const g = getGCD(total, t.lcm), rn = total / g, rd = t.lcm / g;
+                document.getElementById('ui-retry').innerText = `Правильный ответ: ${Math.floor(rn / rd)} ${rn % rd}/${rd}`;
+            }
+			
+			else {
                 const d = document.getElementById('ui-answer'); d.classList.add('correct'); d.innerText = 'Правильный ответ: ' + (t.factors ? t.factors.join(' × ') : t.answer);
             }
 
@@ -1234,7 +1640,7 @@ function nextTask() {
 
             fetch('/api/save-result', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts, deviceHash: state.deviceHash })
+				body: JSON.stringify({ studentId: state.studentId, topicId: state.currentTopic.id, medal, score: state.score, hintsUsed: state.hintsUsed, hearts: state.hearts, deviceHash: state.deviceHash, sessionFlags: state.sessionFlags })
             }).then(r => r.json()).then(resp => {
                 
                 // --- Анимация начисления XP ---

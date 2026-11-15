@@ -131,10 +131,9 @@ function getWeekInfo(offset = 0) {
     };
 }
 
-// --- ДОСТИЖЕНИЯ (единый справочник) ---
 const ACHIEVEMENTS = {
     socializer:    { icon: '🤝', title: 'Связной',         desc: 'Разбудить одноклассника по ссылке.' },
-	first_gold:    { icon: '🥇', title: 'Золотой старт',   desc: 'Получить первую золотую медаль.' },
+    first_gold:    { icon: '🥇', title: 'Золотой старт',   desc: 'Получить первую золотую медаль.' },
     flawless:      { icon: '🛡️', title: 'Ни царапины',      desc: 'Золото без единой ошибки и без подсказок.' },
     on_edge:       { icon: '😰', title: 'На волоске',       desc: 'Золото, совершив две ошибки (осталось одно сердечко).' },
     universal:     { icon: '🎓', title: 'Универсал',        desc: 'Золото по всем трём темам за один день.' },
@@ -144,7 +143,10 @@ const ACHIEVEMENTS = {
     streak_3:      { icon: '🔥', title: 'В ударе',           desc: 'Заниматься 3 дня подряд.' },
     streak_30:     { icon: '🗓️', title: 'Месяц дисциплины', desc: 'Заниматься 30 дней подряд.' },
     hundred:       { icon: '💯', title: 'Сотник',            desc: 'Сыграть 100 тренировок.' },
-    curious:       { icon: '🤔', title: 'Любопытный',        desc: 'Нажать на запрещённый калькулятор.' }
+    curious:       { icon: '🤔', title: 'Любопытный',        desc: 'Нажать на запрещённый калькулятор.' },
+    stubborn:      { icon: '🐂', title: 'Упрямый танк',      desc: 'Решить пример через большой общий знаменатель вместо НОК.' },
+    accountant:    { icon: '🏦', title: 'Бухгалтер',         desc: 'Безошибочно занять единицу у целого числа 3 раза за одну сессию.' },
+    jeweler:       { icon: '✂️', title: 'Ювелир',            desc: 'Золото в сокращении или сложении/вычитании без подсказок.' }
 };
 
 // Правила выдачи: [id, условие]
@@ -159,7 +161,10 @@ const ACH_CHECKS = [
     ['streak_3',      c => c.newStreak >= 3],
     ['streak_30',     c => c.newStreak >= 30],
     ['hundred',       c => c.games >= 100],
-    ['curious',       c => c.triedCalculator]
+    ['curious',       c => c.triedCalculator],
+    ['stubborn',      c => c.flags.includes('stubborn')],
+    ['accountant',    c => c.flags.includes('accountant')],
+    ['jeweler',       c => c.medal === 'gold' && c.hints === 0 && ['fraction_simplify_hard', 'fraction_add_sub', 'mixed_add_sub'].includes(c.topicId)]
 ];
 
 function evaluateAchievements(ctx, owned) {
@@ -271,7 +276,8 @@ app.get('/api/student-progress/:id', (req, res) => {
 });
 
 app.post('/api/save-result', (req, res) => {
-    const { studentId, topicId, medal, score, hintsUsed, hearts, deviceHash } = req.body;
+	const { studentId, topicId, medal, score, hintsUsed, hearts, deviceHash, sessionFlags } = req.body;
+	const flags = Array.isArray(sessionFlags) ? sessionFlags : [];
     const today = getTodayDate();
     const yesterday = getYesterdayDate();
     const hints = hintsUsed || 0;
@@ -324,7 +330,7 @@ app.post('/api/save-result', (req, res) => {
                         if (deviceHash) db.run("UPDATE student_devices SET sessions = sessions + 1, last_seen = ? WHERE student_id = ? AND device_hash = ?", [today, studentId, deviceHash]);
 
                         // 3) Достижения и сохранение XP
-                        const ctx = { medal, hints, heartsLeft, topicStreak, newStreak, games: 0, goldTopicsToday: 0, triedCalculator: false };
+                        const ctx = { topicId, medal, hints, heartsLeft, topicStreak, newStreak, games: 0, goldTopicsToday: 0, triedCalculator: false, flags };
                         runAsync([
                             next => db.get("SELECT COUNT(*) AS c FROM sessions WHERE student_id = ?", [studentId], (e, r) => { ctx.games = r.c || 0; next(); }),
                             next => db.get("SELECT COUNT(DISTINCT topic_id) AS c FROM sessions WHERE student_id = ? AND date = ? AND medal = 'gold'", [studentId, today], (e, r) => { ctx.goldTopicsToday = r.c || 0; next(); }),
@@ -616,8 +622,7 @@ app.get('/admin', adminAuth, (req, res) => {
             const totalStudents = rated.length;
             const classOptions = classRows.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
-            const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', fraction_simplify: 'Сокращение', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение' };
-
+			const topicNames = { factor: 'Множители', nod: 'НОД', nok: 'НОК', fraction_basics: 'Дроби', fraction_simplify: 'Простое сокращение', fraction_simplify_hard: 'Сокращение дробей', mixed_to_improper: 'В неправильную', improper_to_mixed: 'Выделение целого', fraction_equiv: 'Новый знаменатель', fraction_compare: 'Сравнение', fraction_mult_cross: 'Умножение и крест', fraction_add_sub: 'Сложение и вычитание дробей', mixed_add_sub: 'Смешанные числа (+ / -)' };
             const style = `<style>
                 body{font-family:sans-serif; padding:20px; color:#333; background:#f9fbfc;}
                 h2{margin-top:0;}
